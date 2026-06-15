@@ -1,31 +1,20 @@
 const { useState, useEffect, useRef } = React;
 
-const baseStatsData = {
-    shield: { 1: { attack: 63, lethality: 10, defense: 10, hp: 189 }, 5: { attack: 206, lethality: 10, defense: 10, hp: 619 }, 6: { attack: 243, lethality: 10, defense: 10, hp: 730 }, 8: { attack: 339, lethality: 10, defense: 10, hp: 1017 }, 11: { attack: 913, lethality: 10, defense: 10, hp: 2741 } },
-    spear: { 1: { attack: 189, lethality: 10, defense: 10, hp: 63 }, 5: { attack: 619, lethality: 10, defense: 10, hp: 206 }, 6: { attack: 730, lethality: 10, defense: 10, hp: 243 }, 8: { attack: 1017, lethality: 10, defense: 10, hp: 339 }, 11: { attack: 2741, lethality: 10, defense: 10, hp: 913 } },
-    bow: { 1: { attack: 252, lethality: 10, defense: 10, hp: 47 }, 5: { attack: 825, lethality: 10, defense: 10, hp: 155 }, 6: { attack: 974, lethality: 10, defense: 10, hp: 183 }, 8: { attack: 1356, lethality: 10, defense: 10, hp: 254 }, 11: { attack: 3656, lethality: 10, defense: 10, hp: 629 } }
+let baseStatsData = {};
+let INITIAL_HERO_DB = {};
+
+const applyGameData = (data) => {
+    if (!data || !data.baseStatsData || !data.initialHeroDB) {
+        throw new Error('game-data.yaml に baseStatsData と initialHeroDB が必要です。');
+    }
+    baseStatsData = data.baseStatsData;
+    INITIAL_HERO_DB = data.initialHeroDB;
 };
 
-const INITIAL_HERO_DB = {
-    none: { name: "- なし -", type: "none", skills: {} },
-    jeronimo: { name: "ジェロニモ", type: "shield", skills: { 1: [ { category: "DamageUp1", target: "all", timing: "always", value: 0.25, name: "殺傷+" } ], 2: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ], 3: [ { category: "DamageUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "与ダメ+" } ] } },
-    edith: { name: "エディス", type: "shield", skills: { 1: [ { category: "DefenseUp3", target: "bow", timing: "always", value: 0.20, name: "弓被ダメ低下+" }, { category: "DamageUp2", target: "spear", timing: "always", value: 0.20, name: "槍与ダメ+" } ], 2: [ { category: "DefenseUp3", target: "shield", timing: "always", value: 0.20, name: "盾被ダメ低下+" } ], 3: [ { category: "DefenseUp1", target: "all", timing: "always", value: 0.25, name: "部隊HP+" } ] } },
-    gato: { name: "ガト", type: "shield", skills: { 1: [ { category: "DefenseUp2", target: "shield", timing: "always", value: 0.30, name: "盾防御+" } ], 2: [ { category: "DefenseUpS", target: "shield", timing: "after_shield_attack", duration: 1, value: 0.30, name: "盾被ダメ低下+" } ], 3: [ { category: "OppDamageDown2", target: "all_enemy", timing: "always", value: 0.25, name: "敵攻撃低下+" } ] } },
-    gordon: { name: "ゴードン", type: "spear", skills: { 1: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_even_attack_instant", value: 1.00, name: "攻撃時即追加ダメ+" }, { category: "OppDamageDown1", target: "spear_target", timing: "spear_even_attack_after", value: 0.20, name: "対象の殺傷低下+" } ], 2: [ { category: "DamageUp2", target: "spear", timing: "turn_3n", duration: 1, value: 1.50, name: "槍与ダメ+" }, { category: "OppDamageDown1", target: "all_enemy", timing: "turn_3n", duration: 1, value: 0.30, name: "敵全体殺傷低下+" } ], 3: [ { category: "OppDefenseDown1", target: "enemy_shield", timing: "turn_4n", duration: 2, value: 0.30, name: "敵盾被ダメ上昇+" }, { category: "OppDamageDown1", target: "enemy_bow", timing: "turn_4n", duration: 2, value: 0.30, name: "敵弓殺傷低下+" } ] } },
-    sonya: { name: "ソニヤ", type: "spear", skills: { 1: [ { category: "DamageUp2", target: "all", timing: "always", value: 0.20, name: "与ダメ+" } ], 2: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_even_attack_instant", value: 0.75, name: "攻撃時即追加ダメ+" }, { category: "DamageUp3", target: "all", timing: "spear_even_attack_after", value: 0.25, name: "攻撃+" } ], 3: [ { category: "ExtraDamageUp", target: "spear", timing: "turn_5n_instant", value: 2.50, name: "攻撃時即追加ダメ(スタン)+" } ] } },
-    bradley: { name: "ブラッドリー", type: "bow", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ], 2: [ { category: "DamageUpB", target: "all", timing: "always", value: 0.25, name: "HP低下デバフ+" } ], 3: [ { category: "DamageUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "与ダメ+" } ] } },
-    hendrick: { name: "ヘンドリック", type: "bow", skills: { 1: [ { category: "OppDefenseDown2", target: "all_enemy", timing: "always", value: 0.25, name: "敵防御低下+" } ], 2: [ { category: "DefenseUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "防御+" } ], 3: [ { category: "Hendrick3", target: "all_enemy", timing: "turn_3n_instant", value: 0.40, name: "3T毎追加全体攻撃+" } ] } },
-    mia: { name: "ミア", type: "spear", skills: { 1: [ { category: "OppDefenseDown1", target: "enemy_target", timing: "mia_atk_prob_50", value: 0.50, name: "攻撃時確率被ダ増+" } ], 2: [ { category: "ExtraDamageUp", target: "self", timing: "mia_atk_prob_50_ex", value: 0.50, name: "攻撃時確率追加ダメ+" } ], 3: [ { category: "DefenseUp3", target: "all", timing: "mia_turn_prob_40", duration: 1, value: 0.50, name: "毎T確率被ダ減+" } ] } },
-    jessie: { name: "ジェシー", type: "any", skills: { 1: [ { category: "DamageUp1", target: "all", timing: "always", value: 0.25, name: "殺傷+" } ] } },
-    soyun: { name: "ソユン", type: "any", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ] } },
-    patrick: { name: "パトリック", type: "any", skills: { 1: [ { category: "DefenseUp1", target: "all", timing: "always", value: 0.25, name: "HP+" } ] } },
-    flender: { name: "フレンダー", type: "any", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.15, name: "攻撃+" }, { category: "DefenseUp2", target: "all", timing: "always", value: 0.10, name: "防御+" } ] } },
-    bowgun: { name: "ボーガン", type: "any", skills: { 1: [ { category: "OppDamageDown1", target: "all_enemy", timing: "always", value: 0.20, name: "敵殺傷低下+" } ] } },
-    rinsetsu: { name: "リンセツ", type: "any", skills: { 1: [ { category: "OppDamageDown2", target: "all_enemy", timing: "always", value: 0.20, name: "敵攻撃低下+" } ] } },
-    mumei: { name: "無名", type: "any", skills: { 1: [ { category: "DefenseUp3", target: "shield", timing: "always", value: 0.25, name: "通常耐性+" } ] } },
-    reina: { name: "レイナ", type: "any", skills: { 1: [ { category: "NormalDamageUp", target: "all", timing: "always", value: 0.30, name: "通常与ダメ+" } ] } },
-    rene: { name: "レネ", type: "any", skills: { 1: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_rene_timing", duration: 1, value: 2.00, name: "槍追加攻撃+" } ] } },
-    nora: { name: "ノラ", type: "any", skills: { 1: [ { category: "DamageUp2", target: "shield", timing: "always", value: 0.15, name: "盾与ダメ+" }, { category: "DamageUp2", target: "bow", timing: "always", value: 0.15, name: "弓与ダメ+" }, { category: "DefenseUp3", target: "shield", timing: "always", value: 0.15, name: "盾被ダメ低下+" }, { category: "DefenseUp3", target: "bow", timing: "always", value: 0.15, name: "弓被ダメ低下+" } ] } }
+const loadGameData = async () => {
+    const response = await fetch('game-data.yaml', { cache: 'no-store' });
+    if (!response.ok) throw new Error('game-data.yaml を読み込めませんでした: HTTP ' + response.status);
+    applyGameData(jsyaml.load(await response.text()));
 };
 
 const createInitialUnit = (tier, troops, attack, lethality, defense, hp) => ({ tier, initialTroops: troops, troops, buffs: { attack, lethality, defense, hp }, stunned: false });
@@ -1033,5 +1022,17 @@ const App = () => {
     );
 };
 
+const ConfigLoadError = ({ error }) => (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-100 text-slate-800">
+        <div className="bg-white border border-red-200 rounded-lg shadow-md p-5 max-w-xl">
+            <h1 className="text-lg font-bold text-red-700 mb-2">ゲームデータを読み込めませんでした</h1>
+            <p className="text-sm text-slate-700 mb-3">game-data.yaml の内容、またはHTTPサーバー経由で開いているかを確認してください。</p>
+            <pre className="text-xs bg-slate-950 text-red-200 p-3 rounded overflow-auto">{String(error.message || error)}</pre>
+        </div>
+    </div>
+);
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+loadGameData()
+    .then(() => root.render(<App />))
+    .catch(error => root.render(<ConfigLoadError error={error} />));
