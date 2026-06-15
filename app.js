@@ -1,85 +1,31 @@
 const { useState, useEffect, useRef } = React;
 
-let baseStatsData = {};
-let INITIAL_HERO_DB = {};
-let initialArmyState = null;
-let MAX_BATTLE_TURNS = 1000;
-let MONTE_CARLO_RUNS = 1000;
-let SKILL_CATEGORY_OPTIONS = [];
-let SKILL_TARGET_OPTIONS = [];
-let SKILL_TIMING_OPTIONS = [];
-
-const parseTomlValue = (rawValue) => {
-    const value = rawValue.trim();
-    if (value.startsWith('"') && value.endsWith('"')) {
-        return JSON.parse(value);
-    }
-    if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1);
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    if (/^[+-]?\d+(\.\d+)?$/.test(value)) return Number(value);
-    throw new Error('Unsupported TOML value: ' + value);
+const baseStatsData = {
+    shield: { 1: { attack: 63, lethality: 10, defense: 10, hp: 189 }, 5: { attack: 206, lethality: 10, defense: 10, hp: 619 }, 6: { attack: 243, lethality: 10, defense: 10, hp: 730 }, 8: { attack: 339, lethality: 10, defense: 10, hp: 1017 }, 11: { attack: 913, lethality: 10, defense: 10, hp: 2741 } },
+    spear: { 1: { attack: 189, lethality: 10, defense: 10, hp: 63 }, 5: { attack: 619, lethality: 10, defense: 10, hp: 206 }, 6: { attack: 730, lethality: 10, defense: 10, hp: 243 }, 8: { attack: 1017, lethality: 10, defense: 10, hp: 339 }, 11: { attack: 2741, lethality: 10, defense: 10, hp: 913 } },
+    bow: { 1: { attack: 252, lethality: 10, defense: 10, hp: 47 }, 5: { attack: 825, lethality: 10, defense: 10, hp: 155 }, 6: { attack: 974, lethality: 10, defense: 10, hp: 183 }, 8: { attack: 1356, lethality: 10, defense: 10, hp: 254 }, 11: { attack: 3656, lethality: 10, defense: 10, hp: 629 } }
 };
 
-const stripTomlComment = (line) => {
-    let inString = false;
-    let quote = '';
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        const prev = line[i - 1];
-        if ((char === '"' || char === "'") && prev !== '\\') {
-            if (!inString) { inString = true; quote = char; }
-            else if (quote === char) { inString = false; quote = ''; }
-        }
-        if (char === '#' && !inString) return line.slice(0, i);
-    }
-    return line;
-};
-
-const getTomlPath = (root, pathParts) => {
-    let current = root;
-    pathParts.forEach(part => {
-        if (!current[part] || Array.isArray(current[part])) current[part] = {};
-        current = current[part];
-    });
-    return current;
-};
-
-const parseToml = (source) => {
-    const root = {};
-    let current = root;
-
-    source.split(/\r?\n/).forEach((rawLine, index) => {
-        const line = stripTomlComment(rawLine).trim();
-        if (!line) return;
-
-        const arrayMatch = line.match(/^\[\[([^\]]+)\]\]$/);
-        if (arrayMatch) {
-            const parts = arrayMatch[1].split('.').map(part => part.trim());
-            const key = parts.pop();
-            const parent = getTomlPath(root, parts);
-            if (!parent[key]) parent[key] = [];
-            if (!Array.isArray(parent[key])) throw new Error('TOML array/table conflict at line ' + (index + 1));
-            const item = {};
-            parent[key].push(item);
-            current = item;
-            return;
-        }
-
-        const tableMatch = line.match(/^\[([^\]]+)\]$/);
-        if (tableMatch) {
-            current = getTomlPath(root, tableMatch[1].split('.').map(part => part.trim()));
-            return;
-        }
-
-        const eqIndex = line.indexOf('=');
-        if (eqIndex === -1) throw new Error('Invalid TOML line ' + (index + 1) + ': ' + rawLine);
-        const key = line.slice(0, eqIndex).trim();
-        const rawValue = line.slice(eqIndex + 1);
-        current[key] = parseTomlValue(rawValue);
-    });
-
-    return root;
+const INITIAL_HERO_DB = {
+    none: { name: "- なし -", type: "none", skills: {} },
+    jeronimo: { name: "ジェロニモ", type: "shield", skills: { 1: [ { category: "DamageUp1", target: "all", timing: "always", value: 0.25, name: "殺傷+" } ], 2: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ], 3: [ { category: "DamageUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "与ダメ+" } ] } },
+    edith: { name: "エディス", type: "shield", skills: { 1: [ { category: "DefenseUp3", target: "bow", timing: "always", value: 0.20, name: "弓被ダメ低下+" }, { category: "DamageUp2", target: "spear", timing: "always", value: 0.20, name: "槍与ダメ+" } ], 2: [ { category: "DefenseUp3", target: "shield", timing: "always", value: 0.20, name: "盾被ダメ低下+" } ], 3: [ { category: "DefenseUp1", target: "all", timing: "always", value: 0.25, name: "部隊HP+" } ] } },
+    gato: { name: "ガト", type: "shield", skills: { 1: [ { category: "DefenseUp2", target: "shield", timing: "always", value: 0.30, name: "盾防御+" } ], 2: [ { category: "DefenseUpS", target: "shield", timing: "after_shield_attack", duration: 1, value: 0.30, name: "盾被ダメ低下+" } ], 3: [ { category: "OppDamageDown2", target: "all_enemy", timing: "always", value: 0.25, name: "敵攻撃低下+" } ] } },
+    gordon: { name: "ゴードン", type: "spear", skills: { 1: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_even_attack_instant", value: 1.00, name: "攻撃時即追加ダメ+" }, { category: "OppDamageDown1", target: "spear_target", timing: "spear_even_attack_after", value: 0.20, name: "対象の殺傷低下+" } ], 2: [ { category: "DamageUp2", target: "spear", timing: "turn_3n", duration: 1, value: 1.50, name: "槍与ダメ+" }, { category: "OppDamageDown1", target: "all_enemy", timing: "turn_3n", duration: 1, value: 0.30, name: "敵全体殺傷低下+" } ], 3: [ { category: "OppDefenseDown1", target: "enemy_shield", timing: "turn_4n", duration: 2, value: 0.30, name: "敵盾被ダメ上昇+" }, { category: "OppDamageDown1", target: "enemy_bow", timing: "turn_4n", duration: 2, value: 0.30, name: "敵弓殺傷低下+" } ] } },
+    sonya: { name: "ソニヤ", type: "spear", skills: { 1: [ { category: "DamageUp2", target: "all", timing: "always", value: 0.20, name: "与ダメ+" } ], 2: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_even_attack_instant", value: 0.75, name: "攻撃時即追加ダメ+" }, { category: "DamageUp3", target: "all", timing: "spear_even_attack_after", value: 0.25, name: "攻撃+" } ], 3: [ { category: "ExtraDamageUp", target: "spear", timing: "turn_5n_instant", value: 2.50, name: "攻撃時即追加ダメ(スタン)+" } ] } },
+    bradley: { name: "ブラッドリー", type: "bow", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ], 2: [ { category: "DamageUpB", target: "all", timing: "always", value: 0.25, name: "HP低下デバフ+" } ], 3: [ { category: "DamageUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "与ダメ+" } ] } },
+    hendrick: { name: "ヘンドリック", type: "bow", skills: { 1: [ { category: "OppDefenseDown2", target: "all_enemy", timing: "always", value: 0.25, name: "敵防御低下+" } ], 2: [ { category: "DefenseUp2", target: "all", timing: "turn_4n", duration: 2, value: 0.30, name: "防御+" } ], 3: [ { category: "Hendrick3", target: "all_enemy", timing: "turn_3n_instant", value: 0.40, name: "3T毎追加全体攻撃+" } ] } },
+    mia: { name: "ミア", type: "spear", skills: { 1: [ { category: "OppDefenseDown1", target: "enemy_target", timing: "mia_atk_prob_50", value: 0.50, name: "攻撃時確率被ダ増+" } ], 2: [ { category: "ExtraDamageUp", target: "self", timing: "mia_atk_prob_50_ex", value: 0.50, name: "攻撃時確率追加ダメ+" } ], 3: [ { category: "DefenseUp3", target: "all", timing: "mia_turn_prob_40", duration: 1, value: 0.50, name: "毎T確率被ダ減+" } ] } },
+    jessie: { name: "ジェシー", type: "any", skills: { 1: [ { category: "DamageUp1", target: "all", timing: "always", value: 0.25, name: "殺傷+" } ] } },
+    soyun: { name: "ソユン", type: "any", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.25, name: "攻撃+" } ] } },
+    patrick: { name: "パトリック", type: "any", skills: { 1: [ { category: "DefenseUp1", target: "all", timing: "always", value: 0.25, name: "HP+" } ] } },
+    flender: { name: "フレンダー", type: "any", skills: { 1: [ { category: "DamageUp3", target: "all", timing: "always", value: 0.15, name: "攻撃+" }, { category: "DefenseUp2", target: "all", timing: "always", value: 0.10, name: "防御+" } ] } },
+    bowgun: { name: "ボーガン", type: "any", skills: { 1: [ { category: "OppDamageDown1", target: "all_enemy", timing: "always", value: 0.20, name: "敵殺傷低下+" } ] } },
+    rinsetsu: { name: "リンセツ", type: "any", skills: { 1: [ { category: "OppDamageDown2", target: "all_enemy", timing: "always", value: 0.20, name: "敵攻撃低下+" } ] } },
+    mumei: { name: "無名", type: "any", skills: { 1: [ { category: "DefenseUp3", target: "shield", timing: "always", value: 0.25, name: "通常耐性+" } ] } },
+    reina: { name: "レイナ", type: "any", skills: { 1: [ { category: "NormalDamageUp", target: "all", timing: "always", value: 0.30, name: "通常与ダメ+" } ] } },
+    rene: { name: "レネ", type: "any", skills: { 1: [ { category: "ExtraDamageUp", target: "spear", timing: "spear_rene_timing", duration: 1, value: 2.00, name: "槍追加攻撃+" } ] } },
+    nora: { name: "ノラ", type: "any", skills: { 1: [ { category: "DamageUp2", target: "shield", timing: "always", value: 0.15, name: "盾与ダメ+" }, { category: "DamageUp2", target: "bow", timing: "always", value: 0.15, name: "弓与ダメ+" }, { category: "DefenseUp3", target: "shield", timing: "always", value: 0.15, name: "盾被ダメ低下+" }, { category: "DefenseUp3", target: "bow", timing: "always", value: 0.15, name: "弓被ダメ低下+" } ] } }
 };
 
 const createInitialUnit = (tier, troops, attack, lethality, defense, hp) => ({ tier, initialTroops: troops, troops, buffs: { attack, lethality, defense, hp }, stunned: false });
@@ -89,78 +35,36 @@ const createInitialStats = () => ({
     heroSkillCounts: {} // { "heroName_skillLevel": count }
 });
 
-const normalizeBaseStats = (rawBaseStats) => {
-    const normalized = {};
-    Object.entries(rawBaseStats || {}).forEach(([unitType, tiers]) => {
-        normalized[unitType] = {};
-        Object.entries(tiers).forEach(([tierKey, stats]) => {
-            const tier = Number(tierKey.replace(/^tier_/, ''));
-            normalized[unitType][tier] = {
-                attack: Number(stats.attack),
-                lethality: Number(stats.lethality),
-                defense: Number(stats.defense),
-                hp: Number(stats.hp)
-            };
-        });
-    });
-    return normalized;
+const initialArmyState = {
+    shield: createInitialUnit(11, 5000, 0, 0, 0, 0), spear: createInitialUnit(11, 3000, 0, 0, 0, 0), bow: createInitialUnit(11, 2000, 0, 0, 0, 0),
+    heroes: { leaderShield: 'none', leaderSpear: 'none', leaderBow: 'none', rider1: 'none', rider2: 'none', rider3: 'none', rider4: 'none' },
+    spearAttackCount: 0, activeBuffs: [], stats: createInitialStats()
 };
 
-const normalizeHeroDB = (rawHeroes) => {
-    const normalized = {};
-    Object.entries(rawHeroes || {}).forEach(([heroKey, hero]) => {
-        const skills = {};
-        Object.entries(hero).forEach(([key, value]) => {
-            if (!key.startsWith('skill_')) return;
-            const level = Number(key.replace('skill_', ''));
-            skills[level] = value.map(skill => ({
-                category: skill.category,
-                target: skill.target,
-                timing: skill.timing,
-                ...(skill.duration === undefined ? {} : { duration: Number(skill.duration) }),
-                value: Number(skill.value),
-                name: skill.name
-            }));
-        });
-        normalized[heroKey] = { name: hero.name, type: hero.type, skills };
-    });
-    return normalized;
-};
+const MAX_BATTLE_TURNS = 1000;
+const MONTE_CARLO_RUNS = 1000;
 
-const normalizeInitialArmyState = (rawInitialArmy, rawInitialHeroes) => ({
-    shield: createInitialUnit(rawInitialArmy.shield.tier, rawInitialArmy.shield.troops, rawInitialArmy.shield.attack, rawInitialArmy.shield.lethality, rawInitialArmy.shield.defense, rawInitialArmy.shield.hp),
-    spear: createInitialUnit(rawInitialArmy.spear.tier, rawInitialArmy.spear.troops, rawInitialArmy.spear.attack, rawInitialArmy.spear.lethality, rawInitialArmy.spear.defense, rawInitialArmy.spear.hp),
-    bow: createInitialUnit(rawInitialArmy.bow.tier, rawInitialArmy.bow.troops, rawInitialArmy.bow.attack, rawInitialArmy.bow.lethality, rawInitialArmy.bow.defense, rawInitialArmy.bow.hp),
-    heroes: {
-        leaderShield: rawInitialHeroes.leader_shield,
-        leaderSpear: rawInitialHeroes.leader_spear,
-        leaderBow: rawInitialHeroes.leader_bow,
-        rider1: rawInitialHeroes.rider1,
-        rider2: rawInitialHeroes.rider2,
-        rider3: rawInitialHeroes.rider3,
-        rider4: rawInitialHeroes.rider4
-    },
-    spearAttackCount: 0,
-    activeBuffs: [],
-    stats: createInitialStats()
-});
+const SKILL_CATEGORY_OPTIONS = [
+    { val: "DamageUp1", label: "DamageUp1 (分子: 与ダメUP/殺傷バフ)" }, { val: "DamageUp2", label: "DamageUp2 (分子: 与ダメUP/槍与ダメバフ等)" }, { val: "DamageUp3", label: "DamageUp3 (分子: 与ダメUP/攻撃バフ)" },
+    { val: "NormalDamageUp", label: "NormalDamageUp (分子: 通常与ダメバフ)" }, { val: "ExtraDamageUp", label: "ExtraDamageUp (分子: 追加ダメージ枠)" },
+    { val: "OppDefenseDown1", label: "OppDefenseDown1 (分子: 敵盾被ダメ上昇)" }, { val: "OppDefenseDown2", label: "OppDefenseDown2 (分子: 敵防御低下)" },
+    { val: "DefenseUp1", label: "DefenseUp1 (分母: 被ダメ低下/全部隊HPバフ等)" }, { val: "DefenseUp2", label: "DefenseUp2 (分母: 被ダメ低下/全部隊防御バフ等)" },
+    { val: "DefenseUp3", label: "DefenseUp3 (分母: 被ダメ低下/盾通常耐性等)" }, { val: "DefenseUpS", label: "DefenseUpS (分母: 被ダメ低下/ガト特殊盾被ダメ低下)" },
+    { val: "OppDamageDown1", label: "OppDamageDown1 (分母: 敵殺傷低下)" }, { val: "OppDamageDown2", label: "OppDamageDown2 (分母: 敵攻撃低下)" },
+    { val: "Hendrick3", label: "Hendrick3 (ヘンドリックⅢ専用: 3T毎敵全体追加攻撃)" }
+];
 
-const applySimulatorConfig = (rawConfig) => {
-    baseStatsData = normalizeBaseStats(rawConfig.base_stats);
-    INITIAL_HERO_DB = normalizeHeroDB(rawConfig.heroes);
-    initialArmyState = normalizeInitialArmyState(rawConfig.initial_army, rawConfig.initial_heroes);
-    MAX_BATTLE_TURNS = Number(rawConfig.simulation?.max_battle_turns ?? 1000);
-    MONTE_CARLO_RUNS = Number(rawConfig.simulation?.monte_carlo_runs ?? 1000);
-    SKILL_CATEGORY_OPTIONS = rawConfig.skill_category_options || [];
-    SKILL_TARGET_OPTIONS = rawConfig.skill_target_options || [];
-    SKILL_TIMING_OPTIONS = rawConfig.skill_timing_options || [];
-};
+const SKILL_TARGET_OPTIONS = [
+    { val: 'all', label: '味方全体' }, { val: 'shield', label: '味方盾兵' }, { val: 'spear', label: '味方槍兵' }, { val: 'bow', label: '味方弓兵' }, { val: 'self', label: '自身(攻撃部隊)' },
+    { val: 'all_enemy', label: '敵全体' }, { val: 'enemy_shield', label: '敵盾兵' }, { val: 'enemy_spear', label: '敵槍兵' }, { val: 'enemy_bow', label: '敵弓兵' },
+    { val: 'spear_target', label: '槍の攻撃対象' }, { val: 'enemy_target', label: '攻撃時の対象' }
+];
 
-const loadSimulatorConfig = async () => {
-    const response = await fetch('config.toml', { cache: 'no-store' });
-    if (!response.ok) throw new Error('config.toml を読み込めませんでした: HTTP ' + response.status);
-    applySimulatorConfig(parseToml(await response.text()));
-};
+const SKILL_TIMING_OPTIONS = [
+    { val: 'always', label: '永続' }, { val: 'turn_3n', label: '3T毎' }, { val: 'turn_4n', label: '4T毎' }, { val: 'turn_3n_instant', label: '3T毎即時' }, { val: 'turn_5n_instant', label: '5T毎即時(スタン)' },
+    { val: 'after_shield_attack', label: '盾攻撃後' }, { val: 'spear_even_attack_after', label: '槍偶数回(後)' }, { val: 'spear_even_attack_instant', label: '槍偶数回(即時)' }, { val: 'spear_rene_timing', label: 'レネのタイミング' },
+    { val: 'mia_atk_prob_50', label: 'ミア：各部隊攻撃時50%(2T~)' }, { val: 'mia_atk_prob_50_ex', label: 'ミア：各部隊攻撃時50%' }, { val: 'mia_turn_prob_40', label: 'ミア：ターン開始時40%' }
+];
 
 const calcStats = (data) => {
     if (!data || data.length === 0) return { mean: 0, median: 0, variance: 0, stdDev: 0 };
@@ -969,7 +873,7 @@ const App = () => {
                 <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:h-auto lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-4">
                     <div className="flex bg-slate-200 p-1 rounded-lg shrink-0">
                         <button onClick={() => setActiveTab('single')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${activeTab === 'single' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-slate-300'}`}>📝 1回テスト (詳細ログ)</button>
-                        <button onClick={() => setActiveTab('montecarlo')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${activeTab === 'montecarlo' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-300'}`}>📊 {MONTE_CARLO_RUNS.toLocaleString()}回テスト (最強分析)</button>
+                        <button onClick={() => setActiveTab('montecarlo')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${activeTab === 'montecarlo' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-300'}`}>📊 1000回テスト (最強分析)</button>
                         <button onClick={handleReset} className="flex-1 py-1.5 text-xs font-bold bg-slate-400 text-white hover:bg-slate-500 rounded-md transition shadow-sm ml-1">🔄 初期化</button>
                     </div>
 
@@ -1068,14 +972,14 @@ const App = () => {
                     {activeTab === 'montecarlo' && (
                         <div className="bg-white p-3 rounded-xl shadow-md flex flex-col gap-4 min-h-[400px] lg:flex-1 lg:min-h-0 overflow-y-auto">
                             <button onClick={executeMonteCarlo} disabled={turn > 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg shadow-[0_0_15px_rgba(79,70,229,0.5)] transition active:scale-95 disabled:bg-slate-400 disabled:shadow-none text-sm flex items-center justify-center gap-2">
-                                🚀 {MONTE_CARLO_RUNS.toLocaleString()}回シミュレーション実行
+                                🚀 1000回シミュレーション実行
                             </button>
                             {turn > 0 && <p className="text-[10px] text-red-500 text-center font-bold">※テストを行うには、初期化ボタンでTurn0に戻してください。</p>}
 
                             {simResults && (
                                 <div className="flex flex-col gap-4 animate-fade-in">
                                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                        <h3 className="font-bold text-slate-700 text-xs text-center mb-2">🏆 勝率データ ({MONTE_CARLO_RUNS.toLocaleString()}戦中)</h3>
+                                        <h3 className="font-bold text-slate-700 text-xs text-center mb-2">🏆 勝率データ (1,000戦中)</h3>
                                         <WinRateChart results={simResults} />
                                         <div className="flex justify-center gap-4 mt-2 text-xs font-bold">
                                             <span className="text-blue-600">味方: {simResults.filter(r=>r.winner==='ally').length}勝</span>
@@ -1129,17 +1033,5 @@ const App = () => {
     );
 };
 
-const ConfigLoadError = ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-100 text-slate-800">
-        <div className="bg-white border border-red-200 rounded-lg shadow-md p-5 max-w-xl">
-            <h1 className="text-lg font-bold text-red-700 mb-2">設定ファイルを読み込めませんでした</h1>
-            <p className="text-sm text-slate-700 mb-3">config.toml の内容、またはHTTPサーバー経由で開いているかを確認してください。</p>
-            <pre className="text-xs bg-slate-950 text-red-200 p-3 rounded overflow-auto">{String(error.message || error)}</pre>
-        </div>
-    </div>
-);
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
-loadSimulatorConfig()
-    .then(() => root.render(<App />))
-    .catch(error => root.render(<ConfigLoadError error={error} />));
+root.render(<App />);
