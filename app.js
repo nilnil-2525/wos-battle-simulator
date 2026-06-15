@@ -41,6 +41,31 @@ const initialArmyState = {
     spearAttackCount: 0, activeBuffs: [], stats: createInitialStats()
 };
 
+const MAX_BATTLE_TURNS = 1000;
+const MONTE_CARLO_RUNS = 1000;
+
+const SKILL_CATEGORY_OPTIONS = [
+    { val: "DamageUp1", label: "DamageUp1 (分子: 与ダメUP/殺傷バフ)" }, { val: "DamageUp2", label: "DamageUp2 (分子: 与ダメUP/槍与ダメバフ等)" }, { val: "DamageUp3", label: "DamageUp3 (分子: 与ダメUP/攻撃バフ)" },
+    { val: "NormalDamageUp", label: "NormalDamageUp (分子: 通常与ダメバフ)" }, { val: "ExtraDamageUp", label: "ExtraDamageUp (分子: 追加ダメージ枠)" },
+    { val: "OppDefenseDown1", label: "OppDefenseDown1 (分子: 敵盾被ダメ上昇)" }, { val: "OppDefenseDown2", label: "OppDefenseDown2 (分子: 敵防御低下)" },
+    { val: "DefenseUp1", label: "DefenseUp1 (分母: 被ダメ低下/全部隊HPバフ等)" }, { val: "DefenseUp2", label: "DefenseUp2 (分母: 被ダメ低下/全部隊防御バフ等)" },
+    { val: "DefenseUp3", label: "DefenseUp3 (分母: 被ダメ低下/盾通常耐性等)" }, { val: "DefenseUpS", label: "DefenseUpS (分母: 被ダメ低下/ガト特殊盾被ダメ低下)" },
+    { val: "OppDamageDown1", label: "OppDamageDown1 (分母: 敵殺傷低下)" }, { val: "OppDamageDown2", label: "OppDamageDown2 (分母: 敵攻撃低下)" },
+    { val: "Hendrick3", label: "Hendrick3 (ヘンドリックⅢ専用: 3T毎敵全体追加攻撃)" }
+];
+
+const SKILL_TARGET_OPTIONS = [
+    { val: 'all', label: '味方全体' }, { val: 'shield', label: '味方盾兵' }, { val: 'spear', label: '味方槍兵' }, { val: 'bow', label: '味方弓兵' }, { val: 'self', label: '自身(攻撃部隊)' },
+    { val: 'all_enemy', label: '敵全体' }, { val: 'enemy_shield', label: '敵盾兵' }, { val: 'enemy_spear', label: '敵槍兵' }, { val: 'enemy_bow', label: '敵弓兵' },
+    { val: 'spear_target', label: '槍の攻撃対象' }, { val: 'enemy_target', label: '攻撃時の対象' }
+];
+
+const SKILL_TIMING_OPTIONS = [
+    { val: 'always', label: '永続' }, { val: 'turn_3n', label: '3T毎' }, { val: 'turn_4n', label: '4T毎' }, { val: 'turn_3n_instant', label: '3T毎即時' }, { val: 'turn_5n_instant', label: '5T毎即時(スタン)' },
+    { val: 'after_shield_attack', label: '盾攻撃後' }, { val: 'spear_even_attack_after', label: '槍偶数回(後)' }, { val: 'spear_even_attack_instant', label: '槍偶数回(即時)' }, { val: 'spear_rene_timing', label: 'レネのタイミング' },
+    { val: 'mia_atk_prob_50', label: 'ミア：各部隊攻撃時50%(2T~)' }, { val: 'mia_atk_prob_50_ex', label: 'ミア：各部隊攻撃時50%' }, { val: 'mia_turn_prob_40', label: 'ミア：ターン開始時40%' }
+];
+
 const calcStats = (data) => {
     if (!data || data.length === 0) return { mean: 0, median: 0, variance: 0, stdDev: 0 };
     const sorted = [...data].sort((a, b) => a - b);
@@ -186,28 +211,6 @@ const InlineSkillDictionary = ({ heroDB }) => {
 const SkillTestEditorModal = ({ currentDB, onSave, onClose }) => {
     const [tempDB, setTempDB] = useState(JSON.parse(JSON.stringify(currentDB)));
 
-    const ALL_CATEGORIES = [
-        { val: "DamageUp1", label: "DamageUp1 (分子: 与ダメUP/殺傷バフ)" }, { val: "DamageUp2", label: "DamageUp2 (分子: 与ダメUP/槍与ダメバフ等)" }, { val: "DamageUp3", label: "DamageUp3 (分子: 与ダメUP/攻撃バフ)" },
-        { val: "NormalDamageUp", label: "NormalDamageUp (分子: 通常与ダメバフ)" }, { val: "ExtraDamageUp", label: "ExtraDamageUp (分子: 追加ダメージ枠)" },
-        { val: "OppDefenseDown1", label: "OppDefenseDown1 (分子: 敵盾被ダメ上昇)" }, { val: "OppDefenseDown2", label: "OppDefenseDown2 (分子: 敵防御低下)" },
-        { val: "DefenseUp1", label: "DefenseUp1 (分母: 被ダメ低下/全部隊HPバフ等)" }, { val: "DefenseUp2", label: "DefenseUp2 (分母: 被ダメ低下/全部隊防御バフ等)" },
-        { val: "DefenseUp3", label: "DefenseUp3 (分母: 被ダメ低下/盾通常耐性等)" }, { val: "DefenseUpS", label: "DefenseUpS (分母: 被ダメ低下/ガト特殊盾被ダメ低下)" },
-        { val: "OppDamageDown1", label: "OppDamageDown1 (分母: 敵殺傷低下)" }, { val: "OppDamageDown2", label: "OppDamageDown2 (分母: 敵攻撃低下)" },
-        { val: "Hendrick3", label: "Hendrick3 (ヘンドリックⅢ専用: 3T毎敵全体追加攻撃)" }
-    ];
-
-    const TARGET_OPTIONS = [
-        { val: 'all', label: '味方全体' }, { val: 'shield', label: '味方盾兵' }, { val: 'spear', label: '味方槍兵' }, { val: 'bow', label: '味方弓兵' }, { val: 'self', label: '自身(攻撃部隊)' },
-        { val: 'all_enemy', label: '敵全体' }, { val: 'enemy_shield', label: '敵盾兵' }, { val: 'enemy_spear', label: '敵槍兵' }, { val: 'enemy_bow', label: '敵弓兵' },
-        { val: 'spear_target', label: '槍の攻撃対象' }, { val: 'enemy_target', label: '攻撃時の対象' }
-    ];
-
-    const TIMING_OPTIONS = [
-        { val: 'always', label: '永続' }, { val: 'turn_3n', label: '3T毎' }, { val: 'turn_4n', label: '4T毎' }, { val: 'turn_3n_instant', label: '3T毎即時' }, { val: 'turn_5n_instant', label: '5T毎即時(スタン)' },
-        { val: 'after_shield_attack', label: '盾攻撃後' }, { val: 'spear_even_attack_after', label: '槍偶数回(後)' }, { val: 'spear_even_attack_instant', label: '槍偶数回(即時)' }, { val: 'spear_rene_timing', label: 'レネのタイミング' },
-        { val: 'mia_atk_prob_50', label: 'ミア：各部隊攻撃時50%(2T~)' }, { val: 'mia_atk_prob_50_ex', label: 'ミア：各部隊攻撃時50%' }, { val: 'mia_turn_prob_40', label: 'ミア：ターン開始時40%' }
-    ];
-
     const handleChange = (heroKey, level, skillIndex, field, val) => {
         const newData = { ...tempDB }; const skill = newData[heroKey].skills[level][skillIndex];
         if (field === 'value') skill.value = Number(val) / 100; else skill[field] = val; setTempDB(newData);
@@ -242,9 +245,9 @@ const SkillTestEditorModal = ({ currentDB, onSave, onClose }) => {
                                                     <div className="font-bold text-indigo-700 mb-1 flex items-center justify-between border-b pb-1"><span>スキル {level}</span></div>
                                                     <div className="flex flex-col gap-1 mt-1">
                                                         <div className="flex items-center justify-between"><label className="text-slate-500 text-[10px]">名称:</label><input type="text" className="border p-1 rounded w-2/3" value={skill.name} onChange={(e) => handleChange(heroKey, level, index, 'name', e.target.value)} /></div>
-                                                        <div className="flex flex-col gap-0.5"><label className="text-slate-500 text-[10px]">種別(計算上の枠):</label><select className="border p-1 rounded bg-slate-100 w-full text-[10px] font-bold text-indigo-800" value={skill.category} onChange={(e) => handleChange(heroKey, level, index, 'category', e.target.value)}>{ALL_CATEGORIES.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}</select></div>
-                                                        <div className="flex items-center justify-between mt-1"><label className="text-slate-500 text-[10px]">対象:</label><select className="border p-1 rounded bg-white w-2/3 text-[10px]" value={skill.target} onChange={(e) => handleChange(heroKey, level, index, 'target', e.target.value)}>{TARGET_OPTIONS.map(opt => <option key={opt.val} value={opt.val}>{opt.label}</option>)}</select></div>
-                                                        <div className="flex items-center justify-between"><label className="text-slate-500 text-[10px]">条件:</label><select className="border p-1 rounded bg-white w-2/3 text-[10px]" value={skill.timing} onChange={(e) => handleChange(heroKey, level, index, 'timing', e.target.value)}>{TIMING_OPTIONS.map(opt => <option key={opt.val} value={opt.val}>{opt.label}</option>)}</select></div>
+                                                        <div className="flex flex-col gap-0.5"><label className="text-slate-500 text-[10px]">種別(計算上の枠):</label><select className="border p-1 rounded bg-slate-100 w-full text-[10px] font-bold text-indigo-800" value={skill.category} onChange={(e) => handleChange(heroKey, level, index, 'category', e.target.value)}>{SKILL_CATEGORY_OPTIONS.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}</select></div>
+                                                        <div className="flex items-center justify-between mt-1"><label className="text-slate-500 text-[10px]">対象:</label><select className="border p-1 rounded bg-white w-2/3 text-[10px]" value={skill.target} onChange={(e) => handleChange(heroKey, level, index, 'target', e.target.value)}>{SKILL_TARGET_OPTIONS.map(opt => <option key={opt.val} value={opt.val}>{opt.label}</option>)}</select></div>
+                                                        <div className="flex items-center justify-between"><label className="text-slate-500 text-[10px]">条件:</label><select className="border p-1 rounded bg-white w-2/3 text-[10px]" value={skill.timing} onChange={(e) => handleChange(heroKey, level, index, 'timing', e.target.value)}>{SKILL_TIMING_OPTIONS.map(opt => <option key={opt.val} value={opt.val}>{opt.label}</option>)}</select></div>
                                                         <div className="flex items-center justify-between"><label className="text-slate-500 text-[10px]">効果量(%):</label><input type="number" step="0.1" className="border p-1 rounded w-2/3 text-right bg-blue-50 font-bold" value={+(skill.value * 100).toFixed(1)} onChange={(e) => handleChange(heroKey, level, index, 'value', e.target.value)} /></div>
                                                     </div>
                                                 </div>
@@ -789,7 +792,7 @@ const App = () => {
             accumulatedLogs.push(`[システム] 開始時最小部隊数 ${currentMinTroops.toLocaleString()}人を固定適用。`);
         }
 
-        const MAX_TURNS = singleTurn ? currentTurn + 1 : 1000;
+        const MAX_TURNS = singleTurn ? currentTurn + 1 : MAX_BATTLE_TURNS;
         while (allyTotal > 0 && enemyTotal > 0 && currentTurn < MAX_TURNS) {
             currentTurn++;
             const result = processOneTurn(currentArmyData, currentTurn, currentMinTroops, false);
@@ -811,18 +814,17 @@ const App = () => {
     };
 
     const executeMonteCarlo = () => {
-        const TIMES = 1000;
         const initialArmyData = JSON.parse(JSON.stringify(armyData));
         const results = [];
         let minTroops = Math.min(getTotalTroops(initialArmyData.ally), getTotalTroops(initialArmyData.enemy));
 
-        for (let i = 0; i < TIMES; i++) {
+        for (let i = 0; i < MONTE_CARLO_RUNS; i++) {
             let currentArmyData = JSON.parse(JSON.stringify(initialArmyData));
             let currentTurn = 0;
             let allyTotal = getTotalTroops(currentArmyData.ally);
             let enemyTotal = getTotalTroops(currentArmyData.enemy);
 
-            while (allyTotal > 0 && enemyTotal > 0 && currentTurn < 1000) {
+            while (allyTotal > 0 && enemyTotal > 0 && currentTurn < MAX_BATTLE_TURNS) {
                 currentTurn++;
                 const { newArmyData } = processOneTurn(currentArmyData, currentTurn, minTroops, true);
                 currentArmyData = newArmyData;
