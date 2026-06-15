@@ -1,20 +1,15 @@
-const { useState, useEffect, useRef } = React;
+import { useState, useEffect, useRef } from 'react';
+import { WinRateChart, HistogramChart } from './components/Charts.jsx';
 
 let baseStatsData = {};
 let INITIAL_HERO_DB = {};
 
-const applyGameData = (data) => {
+export const applyGameData = (data) => {
     if (!data || !data.baseStatsData || !data.initialHeroDB) {
         throw new Error('game-data.yaml に baseStatsData と initialHeroDB が必要です。');
     }
     baseStatsData = data.baseStatsData;
     INITIAL_HERO_DB = data.initialHeroDB;
-};
-
-const loadGameData = async () => {
-    const response = await fetch('game-data.yaml', { cache: 'no-store' });
-    if (!response.ok) throw new Error('game-data.yaml を読み込めませんでした: HTTP ' + response.status);
-    applyGameData(jsyaml.load(await response.text()));
 };
 
 const createInitialUnit = (tier, troops, attack, lethality, defense, hp) => ({ tier, initialTroops: troops, troops, buffs: { attack, lethality, defense, hp }, stunned: false });
@@ -251,43 +246,6 @@ const SkillTestEditorModal = ({ currentDB, onSave, onClose }) => {
             </div>
         </div>
     );
-};
-
-const WinRateChart = ({ results }) => {
-    const canvasRef = useRef(null); const chartRef = useRef(null);
-    useEffect(() => {
-        if (!results || results.length === 0) return;
-        let allyWins = 0, enemyWins = 0, draws = 0;
-        results.forEach(r => { if (r.winner === 'ally') allyWins++; else if (r.winner === 'enemy') enemyWins++; else draws++; });
-        if (chartRef.current) chartRef.current.destroy();
-        const ctx = canvasRef.current.getContext('2d');
-        chartRef.current = new Chart(ctx, {
-            type: 'doughnut', data: { labels: ['味方勝利', '敵勝利', '引き分け'], datasets: [{ data: [allyWins, enemyWins, draws], backgroundColor: ['#3b82f6', '#ef4444', '#94a3b8'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, cutout: '70%' }
-        });
-        return () => { if (chartRef.current) chartRef.current.destroy(); };
-    }, [results]);
-    return <div className="h-40 relative"><canvas ref={canvasRef}></canvas></div>;
-};
-
-const HistogramChart = ({ data, color, label }) => {
-    const canvasRef = useRef(null); const chartRef = useRef(null);
-    useEffect(() => {
-        if (!data || data.length === 0) return;
-        const min = Math.floor(Math.min(...data)); const max = Math.ceil(Math.max(...data));
-        const diff = max - min === 0 ? 100 : max - min; const binWidth = diff / 10;
-        const bins = new Array(10).fill(0);
-        data.forEach(val => { let index = Math.floor((val - min) / binWidth); if (index >= 10) index = 9; bins[index]++; });
-        const labels = Array.from({length: 10}, (_, i) => { const start = Math.floor(min + i * binWidth); return `${start.toLocaleString()}~`; });
-        if (chartRef.current) chartRef.current.destroy();
-        const ctx = canvasRef.current.getContext('2d');
-        chartRef.current = new Chart(ctx, {
-            type: 'bar', data: { labels: labels, datasets: [{ label: label, data: bins, backgroundColor: color, borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 9 } } } } }
-        });
-        return () => { if (chartRef.current) chartRef.current.destroy(); };
-    }, [data]);
-    return <div className="h-40 relative"><canvas ref={canvasRef}></canvas></div>;
 };
 
 const App = () => {
@@ -1022,17 +980,5 @@ const App = () => {
     );
 };
 
-const ConfigLoadError = ({ error }) => (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-100 text-slate-800">
-        <div className="bg-white border border-red-200 rounded-lg shadow-md p-5 max-w-xl">
-            <h1 className="text-lg font-bold text-red-700 mb-2">ゲームデータを読み込めませんでした</h1>
-            <p className="text-sm text-slate-700 mb-3">game-data.yaml の内容、またはHTTPサーバー経由で開いているかを確認してください。</p>
-            <pre className="text-xs bg-slate-950 text-red-200 p-3 rounded overflow-auto">{String(error.message || error)}</pre>
-        </div>
-    </div>
-);
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-loadGameData()
-    .then(() => root.render(<App />))
-    .catch(error => root.render(<ConfigLoadError error={error} />));
+export default App;
