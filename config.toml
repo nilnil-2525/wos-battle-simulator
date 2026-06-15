@@ -1,0 +1,664 @@
+# WOS battle simulator configuration
+# Edit this file to adjust unit stats, heroes, skills, and simulation defaults.
+
+[simulation]
+max_battle_turns = 1000
+monte_carlo_runs = 1000
+
+[[skill_category_options]]
+val = "DamageUp1"
+label = "DamageUp1 (分子: 与ダメUP/殺傷バフ)"
+
+[[skill_category_options]]
+val = "DamageUp2"
+label = "DamageUp2 (分子: 与ダメUP/槍与ダメバフ等)"
+
+[[skill_category_options]]
+val = "DamageUp3"
+label = "DamageUp3 (分子: 与ダメUP/攻撃バフ)"
+
+[[skill_category_options]]
+val = "NormalDamageUp"
+label = "NormalDamageUp (分子: 通常与ダメバフ)"
+
+[[skill_category_options]]
+val = "ExtraDamageUp"
+label = "ExtraDamageUp (分子: 追加ダメージ枠)"
+
+[[skill_category_options]]
+val = "OppDefenseDown1"
+label = "OppDefenseDown1 (分子: 敵盾被ダメ上昇)"
+
+[[skill_category_options]]
+val = "OppDefenseDown2"
+label = "OppDefenseDown2 (分子: 敵防御低下)"
+
+[[skill_category_options]]
+val = "DefenseUp1"
+label = "DefenseUp1 (分母: 被ダメ低下/全部隊HPバフ等)"
+
+[[skill_category_options]]
+val = "DefenseUp2"
+label = "DefenseUp2 (分母: 被ダメ低下/全部隊防御バフ等)"
+
+[[skill_category_options]]
+val = "DefenseUp3"
+label = "DefenseUp3 (分母: 被ダメ低下/盾通常耐性等)"
+
+[[skill_category_options]]
+val = "DefenseUpS"
+label = "DefenseUpS (分母: 被ダメ低下/ガト特殊盾被ダメ低下)"
+
+[[skill_category_options]]
+val = "OppDamageDown1"
+label = "OppDamageDown1 (分母: 敵殺傷低下)"
+
+[[skill_category_options]]
+val = "OppDamageDown2"
+label = "OppDamageDown2 (分母: 敵攻撃低下)"
+
+[[skill_category_options]]
+val = "Hendrick3"
+label = "Hendrick3 (ヘンドリックⅢ専用: 3T毎敵全体追加攻撃)"
+
+[[skill_target_options]]
+val = "all"
+label = "味方全体"
+
+[[skill_target_options]]
+val = "shield"
+label = "味方盾兵"
+
+[[skill_target_options]]
+val = "spear"
+label = "味方槍兵"
+
+[[skill_target_options]]
+val = "bow"
+label = "味方弓兵"
+
+[[skill_target_options]]
+val = "self"
+label = "自身(攻撃部隊)"
+
+[[skill_target_options]]
+val = "all_enemy"
+label = "敵全体"
+
+[[skill_target_options]]
+val = "enemy_shield"
+label = "敵盾兵"
+
+[[skill_target_options]]
+val = "enemy_spear"
+label = "敵槍兵"
+
+[[skill_target_options]]
+val = "enemy_bow"
+label = "敵弓兵"
+
+[[skill_target_options]]
+val = "spear_target"
+label = "槍の攻撃対象"
+
+[[skill_target_options]]
+val = "enemy_target"
+label = "攻撃時の対象"
+
+[[skill_timing_options]]
+val = "always"
+label = "永続"
+
+[[skill_timing_options]]
+val = "turn_3n"
+label = "3T毎"
+
+[[skill_timing_options]]
+val = "turn_4n"
+label = "4T毎"
+
+[[skill_timing_options]]
+val = "turn_3n_instant"
+label = "3T毎即時"
+
+[[skill_timing_options]]
+val = "turn_5n_instant"
+label = "5T毎即時(スタン)"
+
+[[skill_timing_options]]
+val = "after_shield_attack"
+label = "盾攻撃後"
+
+[[skill_timing_options]]
+val = "spear_even_attack_after"
+label = "槍偶数回(後)"
+
+[[skill_timing_options]]
+val = "spear_even_attack_instant"
+label = "槍偶数回(即時)"
+
+[[skill_timing_options]]
+val = "spear_rene_timing"
+label = "レネのタイミング"
+
+[[skill_timing_options]]
+val = "mia_atk_prob_50"
+label = "ミア：各部隊攻撃時50%(2T~)"
+
+[[skill_timing_options]]
+val = "mia_atk_prob_50_ex"
+label = "ミア：各部隊攻撃時50%"
+
+[[skill_timing_options]]
+val = "mia_turn_prob_40"
+label = "ミア：ターン開始時40%"
+
+[initial_heroes]
+leader_shield = "none"
+leader_spear = "none"
+leader_bow = "none"
+rider1 = "none"
+rider2 = "none"
+rider3 = "none"
+rider4 = "none"
+
+[initial_army.shield]
+tier = 11
+troops = 5000
+attack = 0
+lethality = 0
+defense = 0
+hp = 0
+
+[initial_army.spear]
+tier = 11
+troops = 3000
+attack = 0
+lethality = 0
+defense = 0
+hp = 0
+
+[initial_army.bow]
+tier = 11
+troops = 2000
+attack = 0
+lethality = 0
+defense = 0
+hp = 0
+
+[base_stats.shield.tier_1]
+attack = 63
+lethality = 10
+defense = 10
+hp = 189
+
+[base_stats.shield.tier_5]
+attack = 206
+lethality = 10
+defense = 10
+hp = 619
+
+[base_stats.shield.tier_6]
+attack = 243
+lethality = 10
+defense = 10
+hp = 730
+
+[base_stats.shield.tier_8]
+attack = 339
+lethality = 10
+defense = 10
+hp = 1017
+
+[base_stats.shield.tier_11]
+attack = 913
+lethality = 10
+defense = 10
+hp = 2741
+
+[base_stats.spear.tier_1]
+attack = 189
+lethality = 10
+defense = 10
+hp = 63
+
+[base_stats.spear.tier_5]
+attack = 619
+lethality = 10
+defense = 10
+hp = 206
+
+[base_stats.spear.tier_6]
+attack = 730
+lethality = 10
+defense = 10
+hp = 243
+
+[base_stats.spear.tier_8]
+attack = 1017
+lethality = 10
+defense = 10
+hp = 339
+
+[base_stats.spear.tier_11]
+attack = 2741
+lethality = 10
+defense = 10
+hp = 913
+
+[base_stats.bow.tier_1]
+attack = 252
+lethality = 10
+defense = 10
+hp = 47
+
+[base_stats.bow.tier_5]
+attack = 825
+lethality = 10
+defense = 10
+hp = 155
+
+[base_stats.bow.tier_6]
+attack = 974
+lethality = 10
+defense = 10
+hp = 183
+
+[base_stats.bow.tier_8]
+attack = 1356
+lethality = 10
+defense = 10
+hp = 254
+
+[base_stats.bow.tier_11]
+attack = 3656
+lethality = 10
+defense = 10
+hp = 629
+
+[heroes.none]
+name = "- なし -"
+type = "none"
+
+[heroes.jeronimo]
+name = "ジェロニモ"
+type = "shield"
+
+[[heroes.jeronimo.skill_1]]
+category = "DamageUp1"
+target = "all"
+timing = "always"
+value = 0.25
+name = "殺傷+"
+
+[[heroes.jeronimo.skill_2]]
+category = "DamageUp3"
+target = "all"
+timing = "always"
+value = 0.25
+name = "攻撃+"
+
+[[heroes.jeronimo.skill_3]]
+category = "DamageUp2"
+target = "all"
+timing = "turn_4n"
+duration = 2
+value = 0.30
+name = "与ダメ+"
+
+[heroes.edith]
+name = "エディス"
+type = "shield"
+
+[[heroes.edith.skill_1]]
+category = "DefenseUp3"
+target = "bow"
+timing = "always"
+value = 0.20
+name = "弓被ダメ低下+"
+
+[[heroes.edith.skill_1]]
+category = "DamageUp2"
+target = "spear"
+timing = "always"
+value = 0.20
+name = "槍与ダメ+"
+
+[[heroes.edith.skill_2]]
+category = "DefenseUp3"
+target = "shield"
+timing = "always"
+value = 0.20
+name = "盾被ダメ低下+"
+
+[[heroes.edith.skill_3]]
+category = "DefenseUp1"
+target = "all"
+timing = "always"
+value = 0.25
+name = "部隊HP+"
+
+[heroes.gato]
+name = "ガト"
+type = "shield"
+
+[[heroes.gato.skill_1]]
+category = "DefenseUp2"
+target = "shield"
+timing = "always"
+value = 0.30
+name = "盾防御+"
+
+[[heroes.gato.skill_2]]
+category = "DefenseUpS"
+target = "shield"
+timing = "after_shield_attack"
+duration = 1
+value = 0.30
+name = "盾被ダメ低下+"
+
+[[heroes.gato.skill_3]]
+category = "OppDamageDown2"
+target = "all_enemy"
+timing = "always"
+value = 0.25
+name = "敵攻撃低下+"
+
+[heroes.gordon]
+name = "ゴードン"
+type = "spear"
+
+[[heroes.gordon.skill_1]]
+category = "ExtraDamageUp"
+target = "spear"
+timing = "spear_even_attack_instant"
+value = 1.00
+name = "攻撃時即追加ダメ+"
+
+[[heroes.gordon.skill_1]]
+category = "OppDamageDown1"
+target = "spear_target"
+timing = "spear_even_attack_after"
+value = 0.20
+name = "対象の殺傷低下+"
+
+[[heroes.gordon.skill_2]]
+category = "DamageUp2"
+target = "spear"
+timing = "turn_3n"
+duration = 1
+value = 1.50
+name = "槍与ダメ+"
+
+[[heroes.gordon.skill_2]]
+category = "OppDamageDown1"
+target = "all_enemy"
+timing = "turn_3n"
+duration = 1
+value = 0.30
+name = "敵全体殺傷低下+"
+
+[[heroes.gordon.skill_3]]
+category = "OppDefenseDown1"
+target = "enemy_shield"
+timing = "turn_4n"
+duration = 2
+value = 0.30
+name = "敵盾被ダメ上昇+"
+
+[[heroes.gordon.skill_3]]
+category = "OppDamageDown1"
+target = "enemy_bow"
+timing = "turn_4n"
+duration = 2
+value = 0.30
+name = "敵弓殺傷低下+"
+
+[heroes.sonya]
+name = "ソニヤ"
+type = "spear"
+
+[[heroes.sonya.skill_1]]
+category = "DamageUp2"
+target = "all"
+timing = "always"
+value = 0.20
+name = "与ダメ+"
+
+[[heroes.sonya.skill_2]]
+category = "ExtraDamageUp"
+target = "spear"
+timing = "spear_even_attack_instant"
+value = 0.75
+name = "攻撃時即追加ダメ+"
+
+[[heroes.sonya.skill_2]]
+category = "DamageUp3"
+target = "all"
+timing = "spear_even_attack_after"
+value = 0.25
+name = "攻撃+"
+
+[[heroes.sonya.skill_3]]
+category = "ExtraDamageUp"
+target = "spear"
+timing = "turn_5n_instant"
+value = 2.50
+name = "攻撃時即追加ダメ(スタン)+"
+
+[heroes.bradley]
+name = "ブラッドリー"
+type = "bow"
+
+[[heroes.bradley.skill_1]]
+category = "DamageUp3"
+target = "all"
+timing = "always"
+value = 0.25
+name = "攻撃+"
+
+[[heroes.bradley.skill_2]]
+category = "DamageUpB"
+target = "all"
+timing = "always"
+value = 0.25
+name = "HP低下デバフ+"
+
+[[heroes.bradley.skill_3]]
+category = "DamageUp2"
+target = "all"
+timing = "turn_4n"
+duration = 2
+value = 0.30
+name = "与ダメ+"
+
+[heroes.hendrick]
+name = "ヘンドリック"
+type = "bow"
+
+[[heroes.hendrick.skill_1]]
+category = "OppDefenseDown2"
+target = "all_enemy"
+timing = "always"
+value = 0.25
+name = "敵防御低下+"
+
+[[heroes.hendrick.skill_2]]
+category = "DefenseUp2"
+target = "all"
+timing = "turn_4n"
+duration = 2
+value = 0.30
+name = "防御+"
+
+[[heroes.hendrick.skill_3]]
+category = "Hendrick3"
+target = "all_enemy"
+timing = "turn_3n_instant"
+value = 0.40
+name = "3T毎追加全体攻撃+"
+
+[heroes.mia]
+name = "ミア"
+type = "spear"
+
+[[heroes.mia.skill_1]]
+category = "OppDefenseDown1"
+target = "enemy_target"
+timing = "mia_atk_prob_50"
+value = 0.50
+name = "攻撃時確率被ダ増+"
+
+[[heroes.mia.skill_2]]
+category = "ExtraDamageUp"
+target = "self"
+timing = "mia_atk_prob_50_ex"
+value = 0.50
+name = "攻撃時確率追加ダメ+"
+
+[[heroes.mia.skill_3]]
+category = "DefenseUp3"
+target = "all"
+timing = "mia_turn_prob_40"
+duration = 1
+value = 0.50
+name = "毎T確率被ダ減+"
+
+[heroes.jessie]
+name = "ジェシー"
+type = "any"
+
+[[heroes.jessie.skill_1]]
+category = "DamageUp1"
+target = "all"
+timing = "always"
+value = 0.25
+name = "殺傷+"
+
+[heroes.soyun]
+name = "ソユン"
+type = "any"
+
+[[heroes.soyun.skill_1]]
+category = "DamageUp3"
+target = "all"
+timing = "always"
+value = 0.25
+name = "攻撃+"
+
+[heroes.patrick]
+name = "パトリック"
+type = "any"
+
+[[heroes.patrick.skill_1]]
+category = "DefenseUp1"
+target = "all"
+timing = "always"
+value = 0.25
+name = "HP+"
+
+[heroes.flender]
+name = "フレンダー"
+type = "any"
+
+[[heroes.flender.skill_1]]
+category = "DamageUp3"
+target = "all"
+timing = "always"
+value = 0.15
+name = "攻撃+"
+
+[[heroes.flender.skill_1]]
+category = "DefenseUp2"
+target = "all"
+timing = "always"
+value = 0.10
+name = "防御+"
+
+[heroes.bowgun]
+name = "ボーガン"
+type = "any"
+
+[[heroes.bowgun.skill_1]]
+category = "OppDamageDown1"
+target = "all_enemy"
+timing = "always"
+value = 0.20
+name = "敵殺傷低下+"
+
+[heroes.rinsetsu]
+name = "リンセツ"
+type = "any"
+
+[[heroes.rinsetsu.skill_1]]
+category = "OppDamageDown2"
+target = "all_enemy"
+timing = "always"
+value = 0.20
+name = "敵攻撃低下+"
+
+[heroes.mumei]
+name = "無名"
+type = "any"
+
+[[heroes.mumei.skill_1]]
+category = "DefenseUp3"
+target = "shield"
+timing = "always"
+value = 0.25
+name = "通常耐性+"
+
+[heroes.reina]
+name = "レイナ"
+type = "any"
+
+[[heroes.reina.skill_1]]
+category = "NormalDamageUp"
+target = "all"
+timing = "always"
+value = 0.30
+name = "通常与ダメ+"
+
+[heroes.rene]
+name = "レネ"
+type = "any"
+
+[[heroes.rene.skill_1]]
+category = "ExtraDamageUp"
+target = "spear"
+timing = "spear_rene_timing"
+duration = 1
+value = 2.00
+name = "槍追加攻撃+"
+
+[heroes.nora]
+name = "ノラ"
+type = "any"
+
+[[heroes.nora.skill_1]]
+category = "DamageUp2"
+target = "shield"
+timing = "always"
+value = 0.15
+name = "盾与ダメ+"
+
+[[heroes.nora.skill_1]]
+category = "DamageUp2"
+target = "bow"
+timing = "always"
+value = 0.15
+name = "弓与ダメ+"
+
+[[heroes.nora.skill_1]]
+category = "DefenseUp3"
+target = "shield"
+timing = "always"
+value = 0.15
+name = "盾被ダメ低下+"
+
+[[heroes.nora.skill_1]]
+category = "DefenseUp3"
+target = "bow"
+timing = "always"
+value = 0.15
+name = "弓被ダメ低下+"
