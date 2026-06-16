@@ -1,2 +1,16 @@
 node_modules/
 dist/
+
+# Tools & Agent
+.agents/
+.codex/
+.wrangler/
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
