@@ -170,8 +170,8 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
     const dmgUp2 = sumBuffCategory(myBuffs, 'DamageUp2', atkType, null, true);
     const dmgUp3 = sumBuffCategory(myBuffs, 'DamageUp3', atkType, null, true);
     const normalDmgUp = sumBuffCategory(myBuffs, 'NormalDamageUp', atkType, null, true);
-    const oppDefDown1 = sumBuffCategory(myBuffs, 'OppDefenseDown1', null, defType, false) + miaOppDefDown;
-    const oppDefDown2 = sumBuffCategory(myBuffs, 'OppDefenseDown2', null, defType, false);
+    const oppDefDown1 = sumBuffCategory(myBuffs, 'OppDefenseDown1', atkType, defType, false) + miaOppDefDown;
+    const oppDefDown2 = sumBuffCategory(myBuffs, 'OppDefenseDown2', atkType, defType, false);
     const defUp1 = sumBuffCategory(enemyBuffs, 'DefenseUp1', defType, null, true);
     const defUp2 = sumBuffCategory(enemyBuffs, 'DefenseUp2', defType, null, true);
     let defUp3 = sumBuffCategory(enemyBuffs, 'DefenseUp3', defType, null, true);
@@ -408,6 +408,8 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
 
     let allySpearAttackedThisTurn = false, allySpearEvenAttackOccurred = false;
     let enemySpearAttackedThisTurn = false, enemySpearEvenAttackOccurred = false;
+    let allySpearActualTarget = null;
+    let enemySpearActualTarget = null;
 
     for (let i = 0; i < maxActivePhases; i++) {
         const atkTypeAlly = allyPhases[i];
@@ -419,7 +421,7 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         let applyAllyStunToEnemy = false, applyEnemyStunToAlly = false;
 
         let allyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2) {
+        if (currentTurn >= 2 && atkTypeAlly) {
             const miaSkill1s = allySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
             if (miaSkill1s.length > 0 && Math.random() < 0.50) {
                 miaSkill1s.forEach(s => {
@@ -429,7 +431,7 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
             }
         }
         let enemyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2) {
+        if (currentTurn >= 2 && atkTypeEnemy) {
             const miaSkill1sE = enemySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
             if (miaSkill1sE.length > 0 && Math.random() < 0.50) {
                 miaSkill1sE.forEach(s => {
@@ -466,8 +468,9 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 if (atkTypeAlly === 'shield') triggerBuffs(ally, allySkillPool, 'after_shield_attack', logger, "味方", isSilent);
                 if (atkTypeAlly === 'spear') {
                     allySpearAttackedThisTurn = true;
+                    allySpearActualTarget = finalAllyTarget; // 奇襲ターゲット保存
                     ally.spearAttackCount++;
-                    if (ally.spearAttackCount % 2 === 0) allySpearEvenAttackOccurred = true;
+                    if (ally.spear.troops > 0 && ally.spearAttackCount % 2 === 0) allySpearEvenAttackOccurred = true;
                 }
                 
                 if (atkTypeAlly === 'bow' && (currentTurn - (ally.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (ally.stunTurnOffset||0)) > 0 && allySkillPool.some(s => s.category === 'Hendrick3')) {
@@ -517,8 +520,9 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 if (atkTypeEnemy === 'shield') triggerBuffs(enemy, enemySkillPool, 'after_shield_attack', logger, "敵", isSilent);
                 if (atkTypeEnemy === 'spear') {
                     enemySpearAttackedThisTurn = true;
+                    enemySpearActualTarget = finalEnemyTarget; // 奇襲ターゲット保存
                     enemy.spearAttackCount++;
-                    if (enemy.spearAttackCount % 2 === 0) enemySpearEvenAttackOccurred = true;
+                    if (enemy.spear.troops > 0 && enemy.spearAttackCount % 2 === 0) enemySpearEvenAttackOccurred = true;
                 }
                 
                 if (atkTypeEnemy === 'bow' && (currentTurn - (enemy.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (enemy.stunTurnOffset||0)) > 0 && enemySkillPool.some(s => s.category === 'Hendrick3')) {
@@ -570,16 +574,15 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
             if (evenOccurred) {
                 skillPool.forEach(skill => {
                     if (skill.timing === 'spear_even_attack_after') {
-                        const actualTarget = army.spear.kisyuActiveThisTurn ? 'bow' : target;
-                        army.activeBuffs.push({ ...skill, isSpearActionBuff: true, attackedTarget: actualTarget, remain: 999 });
+                        army.activeBuffs.push({ ...skill, isSpearActionBuff: true, attackedTarget: target, remain: 999 });
                         recordHeroSkill(army, skill, logger, isSilent, true);
                     }
                 });
             }
         }
     };
-    updateSpearActionBuffs(ally, allySkillPool, allySpearAttackedThisTurn, allySpearEvenAttackOccurred, turnAllyTargetNormal, "味方");
-    updateSpearActionBuffs(enemy, enemySkillPool, enemySpearAttackedThisTurn, enemySpearEvenAttackOccurred, turnEnemyTargetNormal, "敵");
+    updateSpearActionBuffs(ally, allySkillPool, allySpearAttackedThisTurn, allySpearEvenAttackOccurred, allySpearActualTarget, "味方");
+    updateSpearActionBuffs(enemy, enemySkillPool, enemySpearAttackedThisTurn, enemySpearEvenAttackOccurred, enemySpearActualTarget, "敵");
 
     const processDuration = (army) => {
         const nextBuffs = [];
