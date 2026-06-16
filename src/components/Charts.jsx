@@ -15,7 +15,7 @@ export const WinRateChart = ({ results }) => {
         });
         return () => { if (chartRef.current) chartRef.current.destroy(); };
     }, [results]);
-    return <div className="h-40 relative"><canvas ref={canvasRef}></canvas></div>;
+    return <div style={{ height: '10rem', position: 'relative' }}><canvas ref={canvasRef}></canvas></div>;
 };
 
 export const HistogramChart = ({ data, color, label }) => {
@@ -35,5 +35,5 @@ export const HistogramChart = ({ data, color, label }) => {
         });
         return () => { if (chartRef.current) chartRef.current.destroy(); };
     }, [data, color, label]);
-    return <div className="h-40 relative"><canvas ref={canvasRef}></canvas></div>;
+    return <div style={{ height: '10rem', position: 'relative' }}><canvas ref={canvasRef}></canvas></div>;
 };

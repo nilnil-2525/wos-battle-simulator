@@ -1,0 +1,134 @@
+/* HeroSelector */
+.heroSelectorContainer {
+  @apply flex items-center justify-between bg-slate-700 p-1.5 rounded mb-1;
+}
+
+.heroSelectorLabel {
+  @apply text-[10px] font-bold text-slate-300 w-16;
+}
+
+.heroSelectorSelect {
+  @apply flex-1 bg-slate-600 text-white text-[11px] p-1 rounded font-bold border-none outline-none cursor-pointer;
+}
+
+/* UnitInput */
+.unitInput {
+  @apply p-3 mb-3 rounded-xl border shadow-sm relative;
+}
+
+.unitInputAlly {
+  @apply bg-blue-50/50 border-blue-200;
+}
+
+.unitInputEnemy {
+  @apply bg-red-50/50 border-red-200;
+}
+
+.stunBadge {
+  @apply absolute top-2 right-2 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse;
+}
+
+.unitTitle {
+  @apply font-bold text-sm mb-2;
+}
+
+.unitTitleAlly {
+  @apply text-blue-800;
+}
+
+.unitTitleEnemy {
+  @apply text-red-800;
+}
+
+.rowFlex {
+  @apply flex items-center gap-2 mb-2;
+}
+
+.labelSmall {
+  @apply text-[11px] font-bold text-gray-600;
+}
+
+.labelSmallMargin {
+  @apply text-[11px] font-bold text-gray-600 ml-2;
+}
+
+.selectSmall {
+  @apply border rounded p-0.5 bg-white font-bold text-xs;
+}
+
+.inputNumberSmall {
+  @apply flex-1 border rounded p-0.5 font-bold text-xs;
+}
+
+.buffContainer {
+  @apply bg-white p-2 rounded border mb-2;
+}
+
+.buffTitle {
+  @apply text-[10px] font-bold text-gray-500 mb-1;
+}
+
+.buffGrid {
+  @apply grid grid-cols-4 gap-1 text-xs;
+}
+
+.buffInputLabel {
+  @apply block text-[9px] text-gray-400 text-center;
+}
+
+.buffInput {
+  @apply w-full text-center border p-0.5 rounded font-bold text-[11px];
+}
+
+.statsFooter {
+  @apply text-[10px] bg-slate-100 p-1.5 rounded flex justify-between font-mono text-slate-600;
+}
+
+.troopsContainer {
+  @apply mt-2 text-right bg-white p-1.5 rounded border flex justify-between items-center shadow-inner;
+}
+
+.troopsLabel {
+  @apply text-gray-500 text-[11px];
+}
+
+.troopsValue {
+  @apply text-base font-bold;
+}
+
+.troopsValueZero {
+  @apply text-gray-400;
+}
+
+.troopsValueAlly {
+  @apply text-blue-600;
+}
+
+.troopsValueEnemy {
+  @apply text-red-600;
+}
+
+/* ArmyPanel */
+.armyPanel {
+  @apply flex-1 bg-white p-3 rounded-xl shadow-md border-t-4;
+}
+
+.armyPanelTitle {
+  @apply text-lg font-black mb-3 flex justify-between;
+}
+
+.armyPanelTitleTotal {
+  @apply text-sm font-normal;
+}
+
+.heroFormationContainer {
+  @apply bg-slate-800 p-2 rounded-lg shadow-inner mb-4;
+}
+
+.heroFormationTitle {
+  @apply font-bold text-yellow-400 text-xs mb-2 border-b border-slate-600 pb-1;
+}
+
+.heroFormationGrid {
+  @apply grid grid-cols-2 gap-2;
+}
