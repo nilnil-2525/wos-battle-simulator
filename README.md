@@ -37,6 +37,41 @@ npm install
 npm run dev
 ```
 起動後、ターミナルに表示されるローカルURL（通常は `http://localhost:5173`）にブラウザでアクセスしてください。
+---
+
+## 🧪 テストの実行と追加方法 (テーブル駆動テスト)
+
+戦闘ロジックのデグレ防止および動作検証のため、YAMLファイルで定義したテストケースを自動実行するテーブル駆動テストを導入しています。プログラミングの知識がない設計者でも、YAMLファイルを変更するだけでテストケースを追加・検証できます。
+
+### 1. テストの実行方法
+以下のコマンドを実行することで、すべてのテストケースが実行されます。
+```bash
+npm run test
+```
+
+### 2. テストケースの追加方法
+[src/utils/battleSimulator.test-cases.yaml](file:///home/hiroki/wos_battle_simulator/src/utils/battleSimulator.test-cases.yaml) の末尾に新しいケースを追加します。
+
+```yaml
+- name: "【テスト名】分かりやすい説明を記載"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    spear: { tier: 11, troops: 50000, attack: 50, lethality: 50, defense: 0, hp: 0 }
+    # 奇襲やミアIスキルを強制発動させたい場合は、以下のフラグを指定します
+    # kisyu_active: true
+    # mia_i_active: true
+    # 偶数回バフを1ターン目から検証したい場合は以下を指定します
+    # spearAttackCount: 1
+    # 英雄を編成する場合は以下を指定します
+    # heroes: { leaderSpear: "gordon" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 期待する合計撃破数
+    kills_to_enemy: 1200
+```
+
+* **期待値の自動決定方法**: 期待値の計算が難しい場合は、一時的に `kills_to_enemy: 0` などでテストを実行し、テスト結果で出力された `Received` の値を期待値として書き直すことで、簡単に正確なテストケースを作成できます。
 
 ---
 
@@ -44,6 +79,8 @@ npm run dev
 
 * **`index.html` / `src/`**: Vite + React 開発用のソースコードおよびUIコンポーネント。
 * **`src/utils/battleSimulator.js`**: 戦闘計算のコアロジック（Reactから独立した純粋な計算エンジン）。
+* **`src/utils/battleSimulator.test.js`**: YAMLテストケースを自動パースして Vitest で実行するテストランナーコード。
+* **`src/utils/battleSimulator.test-cases.yaml`**: 設計者が自由に編集・追加可能な、戦闘シミュレータのテストケース定義ファイル。
 * **`public/game-data.yaml`**: 兵種の基礎ステータスや英雄スキルの基礎値を管理するデータファイル。
 * **`calculation_logic_summary.txt`**: 戦闘進行、ダメージ計算式、スキル発動タイミングなどの詳細な仕様書。
 * **`RELEASE_NOTE.md`**: 各バージョンの変更点（バグ修正や仕様更新）を記録したリリースノート。

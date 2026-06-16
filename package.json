@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pages:dev": "wrangler pages dev ./dist",
+    "pages:deploy": "wrangler pages deploy ./dist"
   },
   "dependencies": {
     "chart.js": "^4.4.7",
@@ -16,6 +20,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.2",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9",
+    "wrangler": "^3.109.0"
   }
 }

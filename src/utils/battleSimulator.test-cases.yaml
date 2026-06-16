@@ -1,0 +1,139 @@
+# WOS Battle Simulator Table-Driven Test Cases
+# コーディングが苦手な設計者でも、ここに設定を追加するだけで新しい戦闘ロジックのテストが追加できます。
+
+- name: "1. 基本ダメージ相性検証 - バフなし盾兵➔槍兵への攻撃 (有利相性 1.1倍)"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 盾兵ベース攻撃913、殺傷10、槍兵ベース防御10、HP913 (game-data.yaml定義準拠)
+    # 相性補正 1.1倍
+    kills_to_enemy: 1100
+
+- name: "1a. 基本ダメージ相性検証 - バフなし槍兵➔弓兵への攻撃 (有利相性 1.1倍)"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 槍兵ベース攻撃2741、殺傷10、弓兵ベース防御10、HP629
+    # 相性補正 1.1倍
+    kills_to_enemy: 4793
+
+- name: "1b. 基本ダメージ相性検証 - バフなし弓兵➔盾兵への攻撃 (有利相性 1.1倍)"
+  ally:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 弓兵ベース攻撃3656 (T11パッシブ1.06倍)、殺傷10、盾兵ベース防御10 (T11パッシブ1.06倍)、HP2741
+    # 相性補正 1.1倍
+    kills_to_enemy: 1467
+
+- name: "1c. 基本ダメージ相性検証 - バフなし弓兵➔槍兵への攻撃 (不利相性 1.0倍)"
+  ally:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 相性補正 1.0倍
+    kills_to_enemy: 4245
+
+- name: "1d. 基本ダメージ相性検証 - バフなし盾兵➔弓兵への攻撃 (不利相性 1.0倍)"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 相性補正 1.0倍
+    kills_to_enemy: 1452
+
+- name: "2. バフ計算検証 - 攻撃・殺傷バフ適用時の撃破数"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 200, lethality: 100, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 6600
+
+- name: "3. 槍兵の相性不利＆T7以上盾兵による軽減検証 (槍兵➔盾兵)"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 100, lethality: 50, defense: 0, hp: 0 }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 100, hp: 50 }
+  expected:
+    # 槍から盾への攻撃は不利のため相性補正なし(1.0)、かつT11盾(T7以上)なのでさらに /1.1 軽減される
+    kills_to_enemy: 858
+
+- name: "4. T11槍兵の奇襲発動時テスト (ターゲットが弓兵に固定され、バフも弓兵に引き継がれること)"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 100, lethality: 50, defense: 0, hp: 0 }
+    kisyu_active: true # 奇襲を強制発動
+    heroes: { leaderSpear: "gordon" } # ゴードンをセット (偶数回攻撃後のバフを持つ)
+    spearAttackCount: 1 # 偶数回バフ(2回目)を誘発するため、初期の攻撃カウントを1にする
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow: { tier: 11, troops: 50000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 奇襲発動により、攻撃対象が bow(弓兵) になり、ゴードンのバフ(spear_even_attack_after)の attackedTarget も bow に引き継がれる
+    spear_actual_target: "bow"
+    spear_action_buff_target: "bow"
+    skill_trigger_counts:
+      "gordon_ゴードンⅠ": 2
+
+- name: "5. ミアIスキルの発動確率検証 - 2ターン目以降の確率デバフの反映"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 100, lethality: 50, defense: 0, hp: 0 }
+    mia_i_active: true # ミアIを強制発動 (OppDefenseDown1: 50%を付与)
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # ミアIのデバフ（敵の被ダメージ50%上昇）が乗り、通常よりダメージが上昇すること
+    kills_to_enemy: 12765
+    skill_trigger_counts:
+      "mia_ミアⅠ": 1 # 2ターン目に1回発動
+      "mia_ミアⅡ": 2 # 1, 2ターン目に各1回、計2回発動
+      "mia_ミアⅢ": 2 # 1, 2ターン目に各1回、計2回発動
+
+- name: "6. ブラッドリーの固有HP検証 - 敵弓リーダー時のHP補正"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "bradley" } # 敵弓リーダーにブラッドリーを編成 (敵槍HPが /1.30 される)
+  expected:
+    # 通常の1100から、敵HP減少により撃破数が1430人に増えること
+    kills_to_enemy: 1430
+
+- name: "7. ヘンドリックの固有スキル検証 - 3ターン目の全体追加狙撃"
+  ally:
+    shield: { tier: 11, troops: 1000000, attack: 0, lethality: 0, defense: 0, hp: 0 } # 壁用の盾兵を追加
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "hendrick" } # ヘンドリックを編成 (3T目狙撃 & 敵防御25%低下)
+    hendrick_active: true # 3ターン実行用フラグ
+  enemy:
+    shield: { tier: 11, troops: 1000000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 累積撃破数
+    kills_to_enemy: 50229
+    skill_trigger_counts:
+      "hendrick_ヘンドリックⅢ": 1 # 3ターン目に狙撃が発動
+
+- name: "8. ソニヤの固有スキル検証 - 5ターン目のスタン付与と6ターン目の敵行動不能"
+  ally:
+    shield: { tier: 11, troops: 10000000, attack: 0, lethality: 0, defense: 0, hp: 0 } # 6ターンまで継続させるため大軍化
+    spear: { tier: 11, troops: 10000000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "sonya" } # ソニヤを編成
+    sonya_active: true # 6ターン実行用フラグ
+  enemy:
+    shield: { tier: 11, troops: 10000000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 累積撃破数
+    kills_to_enemy: 1466262
+    # 5ターン目に敵がスタンし、6ターン目にその敵盾兵が攻撃をパス（行動不能回数=1）になること
+    enemy_stun_turn_offset: 1
+    skill_trigger_counts:
+      "sonya_ソニヤⅢ": 1 # 5T目にスタン付き即時追加攻撃が発動
