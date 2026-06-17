@@ -465,7 +465,6 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                         if(!isSilent) logger(`▶ [味方 ${atkTypeAlly}] ➔ [敵 ${finalAllyTarget || 'なし'}] ターゲットが全滅しているため「空振り」しました。`);
                     }
                 }
-                if (atkTypeAlly === 'shield') triggerBuffs(ally, allySkillPool, 'after_shield_attack', logger, "味方", isSilent);
                 if (atkTypeAlly === 'spear') {
                     allySpearAttackedThisTurn = true;
                     allySpearActualTarget = finalAllyTarget; // 奇襲ターゲット保存
@@ -517,7 +516,6 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                         if(!isSilent) logger(`▶ [敵 ${atkTypeEnemy}] ➔ [味方 ${finalEnemyTarget || 'なし'}] ターゲットが全滅しているため「空振り」しました。`);
                     }
                 }
-                if (atkTypeEnemy === 'shield') triggerBuffs(enemy, enemySkillPool, 'after_shield_attack', logger, "敵", isSilent);
                 if (atkTypeEnemy === 'spear') {
                     enemySpearAttackedThisTurn = true;
                     enemySpearActualTarget = finalEnemyTarget; // 奇襲ターゲット保存
@@ -565,6 +563,10 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 }
             }
         }
+
+        if (atkTypeAlly === 'shield') triggerBuffs(ally, allySkillPool, 'after_shield_attack', logger, "味方", isSilent);
+        if (atkTypeEnemy === 'shield') triggerBuffs(enemy, enemySkillPool, 'after_shield_attack', logger, "敵", isSilent);
+
         if (getTotalTroops(ally) === 0 || getTotalTroops(enemy) === 0) break;
     }
 

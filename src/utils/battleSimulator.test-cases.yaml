@@ -137,3 +137,13 @@
     enemy_stun_turn_offset: 1
     skill_trigger_counts:
       "sonya_ソニヤⅢ": 1 # 5T目にスタン付き即時追加攻撃が発動
+
+- name: "9. ガトⅡのバフ発動タイミング検証 (盾攻撃フェーズ終了後に発動し、盾兵同士の攻撃には適用されないこと)"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "gato" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 314
+    kills_to_ally: 193

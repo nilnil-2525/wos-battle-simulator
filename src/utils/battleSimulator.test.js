@@ -112,6 +112,14 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
                 expect(actualKills).toBe(tc.expected.kills_to_enemy);
             }
 
+            // 味方の被撃破数 (敵から味方への撃破数) の検証
+            if (tc.expected.kills_to_ally !== undefined) {
+                const initialAllyTroops = ally.shield.troops + ally.spear.troops + ally.bow.troops;
+                const finalAllyTroops = nextAlly.shield.troops + nextAlly.spear.troops + nextAlly.bow.troops;
+                const actualAllyKills = initialAllyTroops - finalAllyTroops;
+                expect(actualAllyKills).toBe(tc.expected.kills_to_ally);
+            }
+
             // 奇襲発動時の攻撃対象の検証
             if (tc.expected.spear_action_buff_target !== undefined) {
                 // 今回のV42で追加した actualTarget (バフ内の attackedTarget) から検証
