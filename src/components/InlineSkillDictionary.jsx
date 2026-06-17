@@ -8,7 +8,7 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
         if (heroKey === 'none') return;
         Object.entries(heroData.skills).forEach(([level, skills]) => {
             skills.forEach(skill => {
-                const skillInfo = { heroName: heroData.name, level: `スキル${level}`, name: skill.name, valStr: `${(skill.value * 100).toFixed(1)}%`, timing: skill.timing.includes('always') ? '永続' : skill.timing.replace('_instant', ' (即時)').replace('_after', ' (後付与)'), target: skill.target };
+                const skillInfo = { heroName: heroData.name, level: `ス${level}`, name: skill.name, valStr: `${(skill.value * 100).toFixed(1)}%`, timing: skill.timing.includes('always') ? '永続' : skill.timing.replace('_instant', '即時').replace('_after', '後付与'), target: skill.target };
                 const atkKey = Object.keys(attackCategories).find(k => k === skill.category); if (atkKey) attackCategories[atkKey].push(skillInfo);
                 const defKey = Object.keys(defenseCategories).find(k => k === skill.category); if (defKey) defenseCategories[defKey].push(skillInfo);
             });
@@ -36,12 +36,13 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                                     return (
                                         <div key={catName} className="theme-nested-panel rounded overflow-hidden shadow-sm">
                                             <div className="theme-tab-container font-bold text-[10px] p-1.5 border-b border-slate-700/10">🏷️ {catName}</div>
-                                            <div className="p-2 flex flex-col gap-1.5">
+                                            <div className="p-2 flex flex-col gap-1">
                                                 {skills.map((s, i) => (
-                                                    <div key={i} className="text-[10px] pb-1 border-b border-slate-700/10 last:border-0 last:pb-0">
-                                                        <span className="font-bold">{s.heroName} <span className="theme-text-muted text-[8px]">{s.level}</span>：</span>
-                                                        <span className="theme-ally-win-text font-bold">{s.name}{s.valStr}</span>
-                                                        <span className="theme-text-muted text-[9px] ml-1.5">(対:{s.target} / 条件:{s.timing})</span>
+                                                    <div key={i} className="grid grid-cols-12 gap-1 text-[10px] py-1 border-b border-slate-700/10 last:border-0 font-mono items-center">
+                                                        <span className="col-span-3 font-bold truncate">{s.heroName} <span className="theme-text-muted text-[8px] font-normal">{s.level}</span></span>
+                                                        <span className="col-span-3 truncate theme-text-muted">{s.name}</span>
+                                                        <span className="col-span-2 font-bold text-right theme-ally-win-text">{s.valStr}</span>
+                                                        <span className="col-span-4 theme-text-muted text-[9px] truncate text-right">(対:{s.target}/{s.timing})</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -58,12 +59,13 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                                     return (
                                         <div key={catName} className="theme-nested-panel rounded overflow-hidden shadow-sm">
                                             <div className="theme-tab-container font-bold text-[10px] p-1.5 border-b border-slate-700/10">🏷️ {catName}</div>
-                                            <div className="p-2 flex flex-col gap-1.5">
+                                            <div className="p-2 flex flex-col gap-1">
                                                 {skills.map((s, i) => (
-                                                    <div key={i} className="text-[10px] pb-1 border-b border-slate-700/10 last:border-0 last:pb-0">
-                                                        <span className="font-bold">{s.heroName} <span className="theme-text-muted text-[8px]">{s.level}</span>：</span>
-                                                        <span className="theme-enemy-win-text font-bold">{s.name}{s.valStr}</span>
-                                                        <span className="theme-text-muted text-[9px] ml-1.5">(対:{s.target} / 条件:{s.timing})</span>
+                                                    <div key={i} className="grid grid-cols-12 gap-1 text-[10px] py-1 border-b border-slate-700/10 last:border-0 font-mono items-center">
+                                                        <span className="col-span-3 font-bold truncate">{s.heroName} <span className="theme-text-muted text-[8px] font-normal">{s.level}</span></span>
+                                                        <span className="col-span-3 truncate theme-text-muted">{s.name}</span>
+                                                        <span className="col-span-2 font-bold text-right theme-enemy-win-text">{s.valStr}</span>
+                                                        <span className="col-span-4 theme-text-muted text-[9px] truncate text-right">(対:{s.target}/{s.timing})</span>
                                                     </div>
                                                 ))}
                                             </div>
