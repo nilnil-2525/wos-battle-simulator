@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export const InlineSkillDictionary = ({ heroDB, onClose }) => {
+    const [sortBy, setSortBy] = useState('default'); // 'default' | 'value' | 'timing'
+    
     const attackCategories = { "DamageUp1": [], "DamageUp2": [], "DamageUp3": [], "NormalDamageUp": [], "ExtraDamageUp": [], "OppDefenseDown1": [], "OppDefenseDown2": [] };
     const defenseCategories = { "DefenseUp1": [], "DefenseUp2": [], "DefenseUp3": [], "DefenseUpS": [], "OppDamageDown1": [], "OppDamageDown2": [] };
 
@@ -8,22 +10,58 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
         if (heroKey === 'none') return;
         Object.entries(heroData.skills).forEach(([level, skills]) => {
             skills.forEach(skill => {
-                const skillInfo = { heroName: heroData.name, level: `スキル${level}`, name: skill.name, valStr: `${(skill.value * 100).toFixed(1)}%`, timing: skill.timing.includes('always') ? '永続' : skill.timing.replace('_instant', ' (即時)').replace('_after', ' (後付与)'), target: skill.target };
+                const skillInfo = { heroName: heroData.name, level: `ス${level}`, name: skill.name, valStr: `${(skill.value * 100).toFixed(1)}%`, timing: skill.timing.includes('always') ? '永続' : skill.timing.replace('_instant', '即時').replace('_after', '後付与'), target: skill.target };
                 const atkKey = Object.keys(attackCategories).find(k => k === skill.category); if (atkKey) attackCategories[atkKey].push(skillInfo);
                 const defKey = Object.keys(defenseCategories).find(k => k === skill.category); if (defKey) defenseCategories[defKey].push(skillInfo);
             });
         });
     });
 
+    const sortSkills = (skills) => {
+        const sorted = [...skills];
+        if (sortBy === 'value') {
+            // 効果量（%）の数値が大きい順
+            sorted.sort((a, b) => {
+                const valA = parseFloat(a.valStr);
+                const valB = parseFloat(b.valStr);
+                return valB - valA;
+            });
+        } else if (sortBy === 'timing') {
+            // 条件順（永続を最優先）
+            sorted.sort((a, b) => {
+                if (a.timing === '永続' && b.timing !== '永続') return -1;
+                if (a.timing !== '永続' && b.timing === '永続') return 1;
+                return a.timing.localeCompare(b.timing);
+            });
+        } else {
+            // デフォルト：英雄名順
+            sorted.sort((a, b) => a.heroName.localeCompare(b.heroName));
+        }
+        return sorted;
+    };
+
     return (
         <div className="fixed inset-0 bg-slate-950/75 z-50 flex justify-center items-center p-2 lg:p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
             <div className="ice-panel rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden border border-slate-700/20" onClick={e => e.stopPropagation()}>
-                <div className="theme-header p-3.5 flex justify-between items-center shrink-0 border-b border-slate-700/20">
-                    <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
-                        📚 スキル重複カテゴリー辞典
+                
+                {/* ヘッダー＆ソートコントローラー */}
+                <div className="theme-header p-3.5 flex flex-col sm:flex-row justify-between items-center shrink-0 border-b border-slate-700/20 gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
+                            📚 スキル重複カテゴリー辞典
+                        </h2>
                         <span className="text-[9px] lg:text-[10px] theme-nested-panel px-2 py-0.5 rounded font-normal">※同枠は【加算】、別枠は【乗算】</span>
-                    </h2>
-                    <button onClick={onClose} className="text-2xl hover:opacity-75 leading-none transition px-2">&times;</button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-xs">
+                        <span className="theme-text-muted text-[10px]">並び替え:</span>
+                        <div className="flex theme-tab-container p-0.5 rounded text-[10px] shadow-inner">
+                            <button onClick={() => setSortBy('default')} className={`px-2 py-0.5 rounded transition ${sortBy === 'default' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>👤 英雄順</button>
+                            <button onClick={() => setSortBy('value')} className={`px-2 py-0.5 rounded transition ${sortBy === 'value' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>📊 効果値順</button>
+                            <button onClick={() => setSortBy('timing')} className={`px-2 py-0.5 rounded transition ${sortBy === 'timing' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>⏱️ 条件順</button>
+                        </div>
+                        <button onClick={onClose} className="text-2xl hover:opacity-75 leading-none transition px-2 ml-2">&times;</button>
+                    </div>
                 </div>
                 
                 <div className="p-4 overflow-y-auto flex-1">
@@ -36,12 +74,13 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                                     return (
                                         <div key={catName} className="theme-nested-panel rounded overflow-hidden shadow-sm">
                                             <div className="theme-tab-container font-bold text-[10px] p-1.5 border-b border-slate-700/10">🏷️ {catName}</div>
-                                            <div className="p-2 flex flex-col gap-1.5">
-                                                {skills.map((s, i) => (
-                                                    <div key={i} className="text-[10px] pb-1 border-b border-slate-700/10 last:border-0 last:pb-0">
-                                                        <span className="font-bold">{s.heroName} <span className="theme-text-muted text-[8px]">{s.level}</span>：</span>
-                                                        <span className="theme-ally-win-text font-bold">{s.name}{s.valStr}</span>
-                                                        <span className="theme-text-muted text-[9px] ml-1.5">(対:{s.target} / 条件:{s.timing})</span>
+                                            <div className="p-2 flex flex-col gap-1">
+                                                {sortSkills(skills).map((s, i) => (
+                                                    <div key={i} className="grid grid-cols-12 gap-1 text-[10px] py-1 border-b border-slate-700/10 last:border-0 font-mono items-center">
+                                                        <span className="col-span-3 font-bold truncate">{s.heroName} <span className="theme-text-muted text-[8px] font-normal">{s.level}</span></span>
+                                                        <span className="col-span-3 truncate theme-text-muted">{s.name}</span>
+                                                        <span className="col-span-2 font-bold text-right theme-ally-win-text">{s.valStr}</span>
+                                                        <span className="col-span-4 theme-text-muted text-[9px] truncate text-right">(対:{s.target}/{s.timing})</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -58,12 +97,13 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                                     return (
                                         <div key={catName} className="theme-nested-panel rounded overflow-hidden shadow-sm">
                                             <div className="theme-tab-container font-bold text-[10px] p-1.5 border-b border-slate-700/10">🏷️ {catName}</div>
-                                            <div className="p-2 flex flex-col gap-1.5">
-                                                {skills.map((s, i) => (
-                                                    <div key={i} className="text-[10px] pb-1 border-b border-slate-700/10 last:border-0 last:pb-0">
-                                                        <span className="font-bold">{s.heroName} <span className="theme-text-muted text-[8px]">{s.level}</span>：</span>
-                                                        <span className="theme-enemy-win-text font-bold">{s.name}{s.valStr}</span>
-                                                        <span className="theme-text-muted text-[9px] ml-1.5">(対:{s.target} / 条件:{s.timing})</span>
+                                            <div className="p-2 flex flex-col gap-1">
+                                                {sortSkills(skills).map((s, i) => (
+                                                    <div key={i} className="grid grid-cols-12 gap-1 text-[10px] py-1 border-b border-slate-700/10 last:border-0 font-mono items-center">
+                                                        <span className="col-span-3 font-bold truncate">{s.heroName} <span className="theme-text-muted text-[8px] font-normal">{s.level}</span></span>
+                                                        <span className="col-span-3 truncate theme-text-muted">{s.name}</span>
+                                                        <span className="col-span-2 font-bold text-right theme-enemy-win-text">{s.valStr}</span>
+                                                        <span className="col-span-4 theme-text-muted text-[9px] truncate text-right">(対:{s.target}/{s.timing})</span>
                                                     </div>
                                                 ))}
                                             </div>
