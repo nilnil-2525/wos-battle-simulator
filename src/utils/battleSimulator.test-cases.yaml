@@ -160,3 +160,30 @@
   expected:
     kills_to_enemy: 2870
     kills_to_ally: 2519
+
+- name: "11. グレッグⅢのパッシブHPバフ検証 (味方全部隊のHPが25%上昇し、被撃破数が軽減されること)"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 敵槍兵から味方盾兵への撃破数が、HP25%上昇により 858 から 686 に減少すること (858 / 1.25 = 686)
+    kills_to_ally: 686
+
+- name: "12. グレッグⅠ・Ⅱの確率スキル発動検証 (確率スキル発動で与ダメ40%上昇、敵の与ダメ50%低下デバフが乗ること)"
+  ally:
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg" }
+    greg_active: true # 確率20%スキルを強制発動
+  enemy:
+    shield: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 与ダメージ40%上昇 (1467 * 1.40 = 2053.8 -> 2053)
+    kills_to_enemy: 2053
+    # 敵盾兵の与ダメージ50%低下デバフ + HP25%バフ (1335 / (1.50 * 1.25) = 712)
+    kills_to_ally: 712
+    skill_trigger_counts:
+      "greg_グレッグⅠ": 1
+      "greg_グレッグⅡ": 1
+

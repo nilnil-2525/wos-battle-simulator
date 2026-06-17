@@ -69,7 +69,7 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
 
             // 2. Math.random() のモック (デフォルトは 0.9 で確率スキル不発、特定フラグで 0.1 を返す)
             let randomValue = 0.9;
-            if (tc.ally?.kisyu_active || tc.ally?.mia_i_active) {
+            if (tc.ally?.kisyu_active || tc.ally?.mia_i_active || tc.ally?.greg_active) {
                 randomValue = 0.1;
             }
             vi.spyOn(Math, 'random').mockImplementation(() => randomValue);

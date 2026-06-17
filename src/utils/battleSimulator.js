@@ -49,13 +49,15 @@ export const SKILL_CATEGORY_OPTIONS = [
 export const SKILL_TARGET_OPTIONS = [
     { val: 'all', label: '味方全体' }, { val: 'shield', label: '味方盾兵' }, { val: 'spear', label: '味方槍兵' }, { val: 'bow', label: '味方弓兵' }, { val: 'self', label: '自身(攻撃部隊)' },
     { val: 'all_enemy', label: '敵全体' }, { val: 'enemy_shield', label: '敵盾兵' }, { val: 'enemy_spear', label: '敵槍兵' }, { val: 'enemy_bow', label: '敵弓兵' },
-    { val: 'spear_target', label: '槍の攻撃対象' }, { val: 'enemy_target', label: '攻撃時の対象' }
+    { val: 'spear_target', label: '槍の攻撃対象' }, { val: 'enemy_target', label: '攻撃時の対象' },
+    { val: 'greg_target', label: 'グレッグ：当選したフェーズで動いてる相手兵種' }
 ];
 
 export const SKILL_TIMING_OPTIONS = [
     { val: 'always', label: '永続' }, { val: 'turn_3n', label: '3T毎' }, { val: 'turn_4n', label: '4T毎' }, { val: 'turn_3n_instant', label: '3T毎即時' }, { val: 'turn_5n_instant', label: '5T毎即時(スタン)' },
     { val: 'after_shield_attack', label: '盾攻撃後' }, { val: 'spear_even_attack_after', label: '槍偶数回(後)' }, { val: 'spear_even_attack_instant', label: '槍偶数回(即時)' }, { val: 'spear_rene_timing', label: 'レネのタイミング' },
-    { val: 'mia_atk_prob_50', label: 'ミア：各部隊攻撃時50%(2T~)' }, { val: 'mia_atk_prob_50_ex', label: 'ミア：各部隊攻撃時50%' }, { val: 'mia_turn_prob_40', label: 'ミア：ターン開始時40%' }
+    { val: 'mia_atk_prob_50', label: 'ミア：各部隊攻撃時50%(2T~)' }, { val: 'mia_atk_prob_50_ex', label: 'ミア：各部隊攻撃時50%' }, { val: 'mia_turn_prob_40', label: 'ミア：ターン開始時40%' },
+    { val: 'greg_atk_prob_20_t3', label: 'グレッグ：味方部隊攻撃時20% (3T持続)' }, { val: 'greg_atk_prob_20_t2', label: 'グレッグ：味方部隊攻撃時20% (2T持続)' }
 ];
 
 export const calcStats = (data) => {
@@ -451,6 +453,30 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 ally[atkTypeAlly].stunned = false;
                 ally.stunTurnOffset = (ally.stunTurnOffset || 0) + 1; 
             } else {
+                const gregSkill1s = allySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
+                gregSkill1s.forEach(skill => {
+                    if (Math.random() < 0.20) {
+                        const isExist = ally.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.remain === skill.duration);
+                        if (!isExist) {
+                            ally.activeBuffs.push({ ...skill, remain: skill.duration });
+                            recordHeroSkill(ally, skill, logger, isSilent, true);
+                        }
+                    }
+                });
+                const gregSkill2s = allySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t2');
+                gregSkill2s.forEach(skill => {
+                    if (Math.random() < 0.20) {
+                        if (atkTypeEnemy && enemy[atkTypeEnemy].troops > 0) {
+                            const debuffTarget = `enemy_${atkTypeEnemy}`;
+                            const isExist = ally.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.target === debuffTarget && b.remain === skill.duration);
+                            if (!isExist) {
+                                ally.activeBuffs.push({ ...skill, target: debuffTarget, remain: skill.duration });
+                                recordHeroSkill(ally, skill, logger, isSilent, true);
+                            }
+                        }
+                    }
+                });
+
                 const finalAllyTarget = (atkTypeAlly === 'spear' && ally.spear.kisyuActiveThisTurn) ? 'bow' : turnAllyTargetNormal;
                 if (finalAllyTarget && enemy[finalAllyTarget].troops > 0) {
                     const isEvenAttack = (atkTypeAlly === 'spear' && (ally.spearAttackCount + 1) % 2 === 0);
@@ -502,6 +528,30 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 enemy[atkTypeEnemy].stunned = false;
                 enemy.stunTurnOffset = (enemy.stunTurnOffset || 0) + 1; 
             } else {
+                const gregSkill1sE = enemySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
+                gregSkill1sE.forEach(skill => {
+                    if (Math.random() < 0.20) {
+                        const isExist = enemy.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.remain === skill.duration);
+                        if (!isExist) {
+                            enemy.activeBuffs.push({ ...skill, remain: skill.duration });
+                            recordHeroSkill(enemy, skill, logger, isSilent, true);
+                        }
+                    }
+                });
+                const gregSkill2sE = enemySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t2');
+                gregSkill2sE.forEach(skill => {
+                    if (Math.random() < 0.20) {
+                        if (atkTypeAlly && ally[atkTypeAlly].troops > 0) {
+                            const debuffTarget = `enemy_${atkTypeAlly}`;
+                            const isExist = enemy.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.target === debuffTarget && b.remain === skill.duration);
+                            if (!isExist) {
+                                enemy.activeBuffs.push({ ...skill, target: debuffTarget, remain: skill.duration });
+                                recordHeroSkill(enemy, skill, logger, isSilent, true);
+                            }
+                        }
+                    }
+                });
+
                 const finalEnemyTarget = (atkTypeEnemy === 'spear' && enemy.spear.kisyuActiveThisTurn) ? 'bow' : turnEnemyTargetNormal;
                 if (finalEnemyTarget && ally[finalEnemyTarget].troops > 0) {
                     const isEvenAttack = (atkTypeEnemy === 'spear' && (enemy.spearAttackCount + 1) % 2 === 0);
