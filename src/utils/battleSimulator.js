@@ -115,8 +115,12 @@ export const sumBuffCategory = (buffs, targetCategory, unitType, enemyTargetType
             if (b.target === 'all' || b.target === unitType || b.target === 'self') match = true;
         } else {
             if (b.target === 'all_enemy' || b.target === `enemy_${unitType}`) match = true;
-            if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
-            if (b.target === 'spear_target' && b.attackedTarget === enemyTargetType) match = true;
+            if (targetCategory.startsWith('OppDefenseDown')) {
+                if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === enemyTargetType) match = true;
+            }
+            if (targetCategory.startsWith('OppDamageDown')) {
+                if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
+            }
         }
         if (match) sum += b.value;
     });

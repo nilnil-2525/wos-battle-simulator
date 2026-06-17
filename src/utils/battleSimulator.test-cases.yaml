@@ -147,3 +147,16 @@
   expected:
     kills_to_enemy: 314
     kills_to_ally: 193
+
+- name: "10. ゴードンⅠのデバフ対象検証 (攻撃対象の盾兵のみデバフがかかり、攻撃対象でない弓兵の攻撃は軽減されないこと)"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "gordon" }
+    spearAttackCount: 1
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2870
+    kills_to_ally: 2519
