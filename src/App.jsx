@@ -265,7 +265,7 @@ const App = () => {
                     </h1>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setShowDict(!showDict)} className="text-sm frozen-btn-amber px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1">
-                            {showDict ? '🔼 辞典を閉じる' : '📚 スキル重複辞典'}
+                            {showDict ? '🔼 Close List' : '📚 Skill List'}
                         </button>
                         <button onClick={() => setShowEditor(true)} className="text-sm frozen-btn-indigo px-4 py-2 rounded-lg font-bold transition shadow">
                             ⚙️ Skill Editor

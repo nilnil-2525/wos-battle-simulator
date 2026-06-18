@@ -48,9 +48,8 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                 <div className="theme-header p-3.5 flex flex-col sm:flex-row justify-between items-center shrink-0 border-b border-slate-700/20 gap-3">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
-                            📚 スキル重複カテゴリー辞典
+                            📚 Skill List (重複カテゴリー)
                         </h2>
-                        <span className="text-[9px] lg:text-[10px] theme-nested-panel px-2 py-0.5 rounded font-normal">※同枠は【加算】、別枠は【乗算】</span>
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs">
@@ -65,6 +64,13 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                 </div>
                 
                 <div className="p-4 overflow-y-auto flex-1">
+                    <div className="theme-nested-panel border-l-4 border-amber-500 p-3 rounded-r-lg mb-4 text-xs shrink-0 shadow-sm flex items-center gap-2 animate-fade-in text-amber-500 dark:text-amber-400 light:text-amber-700">
+                        <span className="text-base">💡</span>
+                        <p className="font-medium leading-relaxed">
+                            ここでは各スキルの計算枠（カテゴリー）と効果量・発動条件を一覧で確認できます。
+                            <span className="font-normal text-slate-500 dark:text-slate-500 light:text-slate-600 block mt-1">※同一カテゴリー内の効果は【加算】、異なるカテゴリー同士の効果は【乗算】として戦闘計算に適用されます。</span>
+                        </p>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                             <h3 className="font-black text-xs border-l-4 border-sky-500 pl-2 mb-3 theme-nested-panel py-1.5 rounded-r">⚔️ 味方の攻撃時に計算されるスキル (分子側)</h3>
