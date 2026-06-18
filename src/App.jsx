@@ -315,61 +315,137 @@ const App = () => {
                                 </div>
 
                                 <div className="ice-panel p-3 rounded-xl shadow-md shrink-0 border border-slate-700/10">
-                                    <h3 className="font-bold text-pink-500 mb-2 text-xs border-b border-slate-700/20 pb-1 flex items-center justify-between">
-                                        <span>🎲 スキル発動回数 (Turn {turn})</span>
+                                    <h3 className="font-bold text-pink-500 mb-2.5 text-xs border-b border-slate-700/20 pb-1.5 flex items-center justify-between">
+                                        <span className="flex items-center gap-1">🎲 スキル発動回数 <span className="text-[10px] font-normal theme-text-muted">(ターン {turn})</span></span>
                                     </h3>
-                                    <div className="grid grid-cols-2 gap-x-2 gap-y-3 text-xs leading-normal">
-                                        <div>
-                                            <p className="theme-ally-win-text font-bold mb-1 border-b border-slate-700/20 pb-0.5">【味方 兵士】</p>
-                                            {armyData.ally.shield.tier === 11 && <div>🛡️ 烈晶盾: <span className="font-bold">{armyData.ally.stats.resshoCount}回</span></div>}
-                                            {armyData.ally.spear.tier === 11 && (
-                                                <>
-                                                    <div>🗡️ 奇襲: <span className="font-bold text-amber-500">{armyData.ally.stats.kisyuCount}回</span></div>
-                                                    <div>🗡️ 炎晶戦矛: <span className="font-bold">{armyData.ally.stats.enshoCount}回</span></div>
-                                                    <div>🗡️ 熾烈領域: <span className="font-bold">{armyData.ally.stats.shiretsuCount}回</span></div>
-                                                </>
-                                            )}
-                                            {armyData.ally.bow.tier === 11 && (
-                                                <>
-                                                    <div>🏹 連射: <span className="font-bold">{armyData.ally.stats.renshaCount}回</span></div>
-                                                    <div>🏹 燃晶火薬: <span className="font-bold">{armyData.ally.stats.nenshoCount}回</span></div>
-                                                </>
-                                            )}
-                                            
-                                            {Object.keys(armyData.ally.stats.heroSkillCounts).length > 0 && (
-                                                <div className="mt-2">
-                                                    <p className="theme-ally-win-text font-bold mb-1 border-b border-slate-700/20 pb-0.5">【味方 英雄】</p>
-                                                    {Object.values(armyData.ally.stats.heroSkillCounts).map((s, idx) => (
-                                                        <div key={idx} className="theme-text-muted whitespace-nowrap overflow-hidden text-ellipsis">✨ {s.name}: <span className="font-bold text-teal-600">{s.count}回</span></div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                    
+                                    <div className="grid grid-cols-2 gap-3 text-xs leading-normal">
+                                        {/* 味方スキルカード */}
+                                        <div className="theme-nested-panel p-2.5 rounded-lg border border-slate-700/10 flex flex-col gap-2">
+                                            <h4 className="theme-ally-win-text font-bold text-[10.5px] uppercase tracking-wider border-b border-sky-500/20 pb-1 flex justify-between items-center">
+                                                <span>味方</span>
+                                                <span className="text-[9px] opacity-75 font-mono">ALLY</span>
+                                            </h4>
+                                            <div className="flex flex-col gap-1.5">
+                                                {/* 兵士スキル */}
+                                                {armyData.ally.shield.tier === 11 && (
+                                                    <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                        <span className="theme-text-muted">🛡️ 烈晶盾</span>
+                                                        <span className={`font-bold ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>{armyData.ally.stats.resshoCount}回</span>
+                                                    </div>
+                                                )}
+                                                {armyData.ally.spear.tier === 11 && (
+                                                    <>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 奇襲</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.ally.stats.kisyuCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 炎晶戦矛</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.ally.stats.enshoCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 熾烈領域</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.ally.stats.shiretsuCount}回</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {armyData.ally.bow.tier === 11 && (
+                                                    <>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🏹 連射</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{armyData.ally.stats.renshaCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🏹 燃晶火薬</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{armyData.ally.stats.nenshoCount}回</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                
+                                                {/* 英雄スキル */}
+                                                {Object.keys(armyData.ally.stats.heroSkillCounts).length > 0 && (
+                                                    <div className="flex flex-col gap-1.5 mt-1 border-t border-slate-700/10 pt-1.5">
+                                                        {Object.values(armyData.ally.stats.heroSkillCounts).map((s, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                                <span className="theme-text-muted truncate max-w-[70%]" title={s.name}>✨ {s.name}</span>
+                                                                <span className={`font-bold ${theme === 'dark' ? 'text-fuchsia-400' : 'text-fuchsia-600'}`}>{s.count}回</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* 発動なし時のプレースホルダー */}
+                                                {!(armyData.ally.shield.tier === 11) && !(armyData.ally.spear.tier === 11) && !(armyData.ally.bow.tier === 11) && Object.keys(armyData.ally.stats.heroSkillCounts).length === 0 && (
+                                                    <div className="text-center py-6 text-[10.5px] theme-text-muted border border-dashed border-slate-700/20 rounded">
+                                                        戦闘開始後に表示
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="theme-enemy-win-text font-bold mb-1 border-b border-slate-700/20 pb-0.5">【敵 兵士】</p>
-                                            {armyData.enemy.shield.tier === 11 && <div>🛡️ 烈晶盾: <span className="font-bold">{armyData.enemy.stats.resshoCount}回</span></div>}
-                                            {armyData.enemy.spear.tier === 11 && (
-                                                <>
-                                                    <div>🗡️ 奇襲: <span className="font-bold text-amber-500">{armyData.enemy.stats.kisyuCount}回</span></div>
-                                                    <div>🗡️ 炎晶戦矛: <span className="font-bold">{armyData.enemy.stats.enshoCount}回</span></div>
-                                                    <div>🗡️ 熾烈領域: <span className="font-bold">{armyData.enemy.stats.shiretsuCount}回</span></div>
-                                                </>
-                                            )}
-                                            {armyData.enemy.bow.tier === 11 && (
-                                                <>
-                                                    <div>🏹 連射: <span className="font-bold">{armyData.enemy.stats.renshaCount}回</span></div>
-                                                    <div>🏹 燃晶火薬: <span className="font-bold">{armyData.enemy.stats.nenshoCount}回</span></div>
-                                                </>
-                                            )}
 
-                                            {Object.keys(armyData.enemy.stats.heroSkillCounts).length > 0 && (
-                                                <div className="mt-2">
-                                                    <p className="theme-enemy-win-text font-bold mb-1 border-b border-slate-700/20 pb-0.5">【敵 英雄】</p>
-                                                    {Object.values(armyData.enemy.stats.heroSkillCounts).map((s, idx) => (
-                                                        <div key={idx} className="theme-text-muted whitespace-nowrap overflow-hidden text-ellipsis">✨ {s.name}: <span className="font-bold text-teal-600">{s.count}回</span></div>
-                                                    ))}
-                                                </div>
-                                            )}
+                                        {/* 敵スキルカード */}
+                                        <div className="theme-nested-panel p-2.5 rounded-lg border border-slate-700/10 flex flex-col gap-2">
+                                            <h4 className="theme-enemy-win-text font-bold text-[10.5px] uppercase tracking-wider border-b border-red-500/20 pb-1 flex justify-between items-center">
+                                                <span>敵</span>
+                                                <span className="text-[9px] opacity-75 font-mono">ENEMY</span>
+                                            </h4>
+                                            <div className="flex flex-col gap-1.5">
+                                                {/* 兵士スキル */}
+                                                {armyData.enemy.shield.tier === 11 && (
+                                                    <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                        <span className="theme-text-muted">🛡️ 烈晶盾</span>
+                                                        <span className={`font-bold ${theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>{armyData.enemy.stats.resshoCount}回</span>
+                                                    </div>
+                                                )}
+                                                {armyData.enemy.spear.tier === 11 && (
+                                                    <>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 奇襲</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.enemy.stats.kisyuCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 炎晶戦矛</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.enemy.stats.enshoCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🗡️ 熾烈領域</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>{armyData.enemy.stats.shiretsuCount}回</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {armyData.enemy.bow.tier === 11 && (
+                                                    <>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🏹 連射</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{armyData.enemy.stats.renshaCount}回</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                            <span className="theme-text-muted">🏹 燃晶火薬</span>
+                                                            <span className={`font-bold ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{armyData.enemy.stats.nenshoCount}回</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                
+                                                {/* 英雄スキル */}
+                                                {Object.keys(armyData.enemy.stats.heroSkillCounts).length > 0 && (
+                                                    <div className="flex flex-col gap-1.5 mt-1 border-t border-slate-700/10 pt-1.5">
+                                                        {Object.values(armyData.enemy.stats.heroSkillCounts).map((s, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center px-1.5 py-1 rounded bg-slate-900/15 border border-slate-700/5 font-mono text-[11px]">
+                                                                <span className="theme-text-muted truncate max-w-[70%]" title={s.name}>✨ {s.name}</span>
+                                                                <span className={`font-bold ${theme === 'dark' ? 'text-fuchsia-400' : 'text-fuchsia-600'}`}>{s.count}回</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* 発動なし時のプレースホルダー */}
+                                                {!(armyData.enemy.shield.tier === 11) && !(armyData.enemy.spear.tier === 11) && !(armyData.enemy.bow.tier === 11) && Object.keys(armyData.enemy.stats.heroSkillCounts).length === 0 && (
+                                                    <div className="text-center py-6 text-[10.5px] theme-text-muted border border-dashed border-slate-700/20 rounded">
+                                                        戦闘開始後に表示
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
