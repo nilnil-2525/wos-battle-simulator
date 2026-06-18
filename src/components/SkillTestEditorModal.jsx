@@ -25,14 +25,21 @@ export const SkillTestEditorModal = ({ currentDB, initialHeroDB, onSave, onClose
         <div className="fixed inset-0 bg-slate-900/90 z-50 flex justify-center items-center p-2 lg:p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden animate-fade-in">
                 <div className="bg-slate-800 p-3 flex justify-between items-center text-white shrink-0">
-                    <h2 className="font-bold text-lg flex items-center gap-2">⚙️ 英雄スキル・完全エディタ</h2>
+                    <h2 className="font-bold text-lg flex items-center gap-2">⚙️ Skill Editor (英雄スキル)</h2>
                     <div className="flex gap-2">
-                        <button onClick={resetToDefault} className="text-xs bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded font-bold transition">初期化</button>
-                        <button onClick={() => onSave(tempDB)} className="text-xs bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 rounded font-bold transition shadow-[0_0_10px_rgba(16,185,129,0.5)]">保存して適用</button>
+                        <button onClick={resetToDefault} className="text-xs bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded font-bold transition">Reset</button>
+                        <button onClick={() => onSave(tempDB)} className="text-xs bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 rounded font-bold transition shadow-[0_0_10px_rgba(16,185,129,0.5)]">Save</button>
                         <button onClick={onClose} className="text-2xl ml-2 hover:text-slate-300 leading-none">&times;</button>
                     </div>
                 </div>
                 <div className="p-4 overflow-y-auto flex-1 bg-slate-100">
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-lg mb-4 text-xs text-blue-800 shrink-0 shadow-sm flex items-center gap-2 animate-fade-in">
+                        <span className="text-base">💡</span>
+                        <p className="font-medium leading-relaxed">
+                            ここでは各英雄のスキル設定を一時的に変更して、シミュレーションを行うことができます。
+                            <span className="font-normal text-slate-500 block mt-1">※変更した内容は、ページをリロードすると自動的に元の初期値データにリセットされます。</span>
+                        </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Object.entries(tempDB).map(([heroKey, heroData]) => {
                             if (heroKey === 'none') return null;

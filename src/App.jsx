@@ -173,7 +173,7 @@ const App = () => {
     const handleSaveHeroDB = (newDB) => {
         setHeroDB(newDB);
         setShowEditor(false);
-        setLogs(prev => [...prev, "==== システム通知 ====", "⚙️ エディタから英雄スキルデータを更新・適用しました！"]);
+        setLogs(prev => [...prev, "==== システム通知 ====", "⚙️ Skill Editorから英雄スキルデータを更新・適用しました！"]);
     };
 
     const executeBattle = (singleTurn = false) => {
@@ -268,7 +268,7 @@ const App = () => {
                             {showDict ? '🔼 辞典を閉じる' : '📚 スキル重複辞典'}
                         </button>
                         <button onClick={() => setShowEditor(true)} className="text-sm frozen-btn-indigo px-4 py-2 rounded-lg font-bold transition shadow">
-                            ⚙️ エディタ
+                            ⚙️ Skill Editor
                         </button>
                         <button onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')} className={`text-sm px-3 py-2 rounded-lg font-bold transition shadow flex items-center gap-1 ${theme === 'dark' ? 'frozen-btn-indigo' : 'frozen-btn-amber'}`}>
                             {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
