@@ -202,8 +202,8 @@ const App = () => {
 
         if (!singleTurn || allyTotal === 0 || enemyTotal === 0) {
             if (allyTotal === 0 && enemyTotal === 0) accumulatedLogs.push("★引き分け！");
-            else if (allyTotal === 0) accumulatedLogs.push("★敵軍の勝利！");
-            else if (enemyTotal === 0) accumulatedLogs.push("★味方軍の勝利！");
+            else if (allyTotal === 0) accumulatedLogs.push("★敵の勝利！");
+            else if (enemyTotal === 0) accumulatedLogs.push("★味方の勝利！");
         }
 
         setArmyData(currentArmyData);
@@ -283,7 +283,7 @@ const App = () => {
                 <div className="flex flex-col lg:flex-row gap-4">
                     <ArmyPanel 
                         side="ally" 
-                        title="味方軍" 
+                        title="味方" 
                         army={armyData.ally} 
                         bgColor="" 
                         borderColor="border-sky-500" 
@@ -315,10 +315,10 @@ const App = () => {
                                 </div>
 
                                 <div className="ice-panel p-3 rounded-xl shadow-md shrink-0 border border-slate-700/10">
-                                    <h3 className="font-bold text-pink-500 mb-2 text-[11px] border-b border-slate-700/20 pb-1 flex items-center justify-between">
+                                    <h3 className="font-bold text-pink-500 mb-2 text-xs border-b border-slate-700/20 pb-1 flex items-center justify-between">
                                         <span>🎲 スキル発動回数 (Turn {turn})</span>
                                     </h3>
-                                    <div className="grid grid-cols-2 gap-x-2 gap-y-3 text-[10px] leading-tight">
+                                    <div className="grid grid-cols-2 gap-x-2 gap-y-3 text-xs leading-normal">
                                         <div>
                                             <p className="theme-ally-win-text font-bold mb-1 border-b border-slate-700/20 pb-0.5">【味方 兵士】</p>
                                             {armyData.ally.shield.tier === 11 && <div>🛡️ 烈晶盾: <span className="font-bold">{armyData.ally.stats.resshoCount}回</span></div>}
@@ -376,7 +376,7 @@ const App = () => {
 
                                 <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col min-h-[400px] lg:flex-1 lg:min-h-0 border border-slate-700/10">
                                     <h3 className="font-bold mb-1 text-xs border-b border-slate-700/20 pb-1 shrink-0">詳細戦闘ログ</h3>
-                                    <div ref={logContainerRef} className="theme-log-container rounded flex-1 overflow-y-auto p-2 text-[10px] font-mono leading-relaxed whitespace-pre-wrap">
+                                    <div ref={logContainerRef} className="theme-log-container rounded flex-1 overflow-y-auto p-2 text-[11.5px] font-mono leading-relaxed whitespace-pre-wrap">
                                         {logs.length === 0 && <p className="theme-text-muted text-center mt-4">ボタンを押して開始してください。</p>}
                                         {logs.map((log, i) => (
                                             <div key={i} className={`mb-1 ${
@@ -403,7 +403,7 @@ const App = () => {
                                 <button onClick={executeMonteCarlo} disabled={turn > 0} className="w-full frozen-btn-indigo font-bold py-3 rounded-lg transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
                                     🚀 1000回シミュレーション実行
                                 </button>
-                                {turn > 0 && <p className="text-[10px] text-red-500 text-center font-bold">※テストを行うには、初期化ボタンでTurn0に戻してください。</p>}
+                                {turn > 0 && <p className="text-xs text-red-500 text-center font-bold">※テストを行うには、初期化ボタンでTurn0に戻してください。</p>}
 
                                 {simResults && (
                                     <div className="flex flex-col gap-4 animate-fade-in">
@@ -420,12 +420,12 @@ const App = () => {
                                             <h3 className="font-bold theme-ally-win-text text-xs text-center mb-1">🟦 味方勝利時の「残り兵力」分析</h3>
                                             {allyWinResults.length > 0 ? (
                                                 <>
-                                                    <div className="flex flex-col gap-1 text-[11px] mb-2 px-2 theme-ally-win-text theme-log-container rounded py-1.5 font-bold shadow-inner">
+                                                    <div className="flex flex-col gap-1 text-xs mb-2 px-2 theme-ally-win-text theme-log-container rounded py-1.5 font-bold shadow-inner">
                                                         <div className="flex justify-between border-b border-slate-700/10 pb-1">
                                                             <span>🎯 期待値(平均): <span className="theme-ally-win-text text-sm">{allyStats.mean.toLocaleString()}人</span></span>
                                                             <span>安定度(中央): <span className="theme-ally-win-text-sub">{allyStats.median.toLocaleString()}人</span></span>
                                                         </div>
-                                                        <div className="text-right text-[9px] theme-ally-win-text-sub">
+                                                        <div className="text-right text-[11px] theme-ally-win-text-sub">
                                                             ブレ幅(σ): ±{allyStats.stdDev.toLocaleString()}
                                                         </div>
                                                     </div>
@@ -438,12 +438,12 @@ const App = () => {
                                             <h3 className="font-bold theme-enemy-win-text text-xs text-center mb-1">🟥 敵勝利時の「残り兵力」分析</h3>
                                             {enemyWinResults.length > 0 ? (
                                                 <>
-                                                    <div className="flex flex-col gap-1 text-[11px] mb-2 px-2 theme-enemy-win-text theme-log-container rounded py-1.5 font-bold shadow-inner">
+                                                    <div className="flex flex-col gap-1 text-xs mb-2 px-2 theme-enemy-win-text theme-log-container rounded py-1.5 font-bold shadow-inner">
                                                         <div className="flex justify-between border-b border-slate-700/10 pb-1">
                                                             <span>🎯 期待値(平均): <span className="theme-enemy-win-text text-sm">{enemyStats.mean.toLocaleString()}人</span></span>
                                                             <span>安定度(中央): <span className="theme-enemy-win-text-sub">{enemyStats.median.toLocaleString()}人</span></span>
                                                         </div>
-                                                        <div className="text-right text-[9px] theme-enemy-win-text-sub">
+                                                        <div className="text-right text-[11px] theme-enemy-win-text-sub">
                                                             ブレ幅(σ): ±{enemyStats.stdDev.toLocaleString()}
                                                         </div>
                                                     </div>
@@ -459,7 +459,7 @@ const App = () => {
                     
                     <ArmyPanel 
                         side="enemy" 
-                        title="敵軍" 
+                        title="敵" 
                         army={armyData.enemy} 
                         bgColor="" 
                         borderColor="border-red-500" 

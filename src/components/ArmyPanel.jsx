@@ -3,8 +3,8 @@ import { baseStatsData } from '../utils/battleSimulator.js';
 
 export const HeroSelector = ({ side, role, label, allowedType, value, onChange, disabled, heroDB }) => (
     <div className="flex items-center justify-between theme-hero-selector p-1.5 rounded mb-1">
-        <span className="text-[10px] font-bold theme-text-muted w-16">{label}</span>
-        <select className="flex-1 theme-hero-select-box text-[11px] p-1 rounded font-bold border border-slate-700/20 outline-none cursor-pointer" value={value} onChange={e => onChange(side, role, e.target.value)} disabled={disabled}>
+        <span className="text-[11px] font-bold theme-text-muted w-16">{label}</span>
+        <select className="flex-1 theme-hero-select-box text-xs p-1 rounded font-bold border border-slate-700/20 outline-none cursor-pointer" value={value} onChange={e => onChange(side, role, e.target.value)} disabled={disabled}>
             {Object.entries(heroDB).map(([key, hero]) => {
                 if (allowedType && hero.type !== allowedType && hero.type !== 'none') return null;
                 return <option key={key} value={key}>{hero.name}</option>;
@@ -47,7 +47,7 @@ export const UnitInput = ({
 
     return (
         <div className={`p-3 mb-3 rounded-xl border relative ${side === 'ally' ? 'theme-unit-panel-ally' : 'theme-unit-panel-enemy'}`}>
-            {isStunned && <div className="absolute top-2 right-2 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse">🌀 スタン中</div>}
+            {isStunned && <div className="absolute top-2 right-2 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse">🌀 スタン中</div>}
             
             <div className="flex justify-between items-center mb-2 border-b border-slate-650/40 pb-1">
                 <h4 className={`font-bold text-sm ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'}`}>{label}</h4>
@@ -86,27 +86,27 @@ export const UnitInput = ({
             </div>
 
             <div className="flex items-center gap-2 mb-2">
-                <label className="text-[11px] font-bold theme-text-muted">Tier</label>
+                <label className="text-xs font-bold theme-text-muted">Tier</label>
                 <select className="border border-slate-700/20 rounded p-0.5 theme-input font-bold text-xs" value={unit.tier} onChange={(e) => onChange(side, type, 'tier', Number(e.target.value))} disabled={disabled}>
                     {[1,5,6,8,11].map(t => <option key={t} value={t}>{t === 11 ? "T11 (fc10)" : `T${t}`}</option>)}
                 </select>
-                <label className="text-[11px] font-bold theme-text-muted ml-2">兵士数</label>
+                <label className="text-xs font-bold theme-text-muted ml-2">兵士数</label>
                 <input type="number" className="flex-1 border border-slate-700/20 rounded p-0.5 theme-input font-bold text-xs" value={unit.initialTroops} onChange={(e) => onChange(side, type, 'initialTroops', Math.max(0, Number(e.target.value)))} disabled={disabled} />
             </div>
             <div className="theme-tab-container p-2 rounded mb-2">
-                <h5 className="text-[10px] font-bold theme-text-muted mb-1">ステータスバフ (%)</h5>
+                <h5 className="text-xs font-bold theme-text-muted mb-1">ステータスバフ (%)</h5>
                 <div className="grid grid-cols-4 gap-1 text-xs">
-                    <div><label className="block text-[9px] theme-text-muted text-center">攻撃</label><input type="number" value={unit.buffs.attack} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, attack: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-[11px]" /></div>
-                    <div><label className="block text-[9px] theme-text-muted text-center">防御</label><input type="number" value={unit.buffs.defense} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, defense: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-[11px]" /></div>
-                    <div><label className="block text-[9px] theme-text-muted text-center">殺傷</label><input type="number" value={unit.buffs.lethality} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, lethality: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-[11px]" /></div>
-                    <div><label className="block text-[9px] theme-text-muted text-center">HP</label><input type="number" value={unit.buffs.hp} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, hp: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-[11px]" /></div>
+                    <div><label className="block text-[10.5px] theme-text-muted text-center">攻撃</label><input type="number" value={unit.buffs.attack} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, attack: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-xs" /></div>
+                    <div><label className="block text-[10.5px] theme-text-muted text-center">防御</label><input type="number" value={unit.buffs.defense} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, defense: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-xs" /></div>
+                    <div><label className="block text-[10.5px] theme-text-muted text-center">殺傷</label><input type="number" value={unit.buffs.lethality} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, lethality: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-xs" /></div>
+                    <div><label className="block text-[10.5px] theme-text-muted text-center">HP</label><input type="number" value={unit.buffs.hp} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, hp: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-xs" /></div>
                 </div>
             </div>
-            <div className="text-[10px] theme-log-container p-1.5 rounded flex justify-between font-mono">
+            <div className="text-xs theme-log-container p-1.5 rounded flex justify-between font-mono">
                 <span>攻:{fAtk}</span><span>防:{fDef}</span><span>殺:{fLet}</span><span>HP:{fHp}</span>
             </div>
             <div className="mt-2 text-right theme-log-container p-1.5 rounded flex justify-between items-center shadow-inner">
-                <span className="theme-text-muted text-[11px]">残存兵力</span>
+                <span className="theme-text-muted text-xs">残存兵力</span>
                 <span className={`text-base font-bold ${unit.troops === 0 ? "text-slate-500" : side === 'ally' ? "theme-ally-win-text" : "theme-enemy-win-text"}`}>{unit.troops.toLocaleString()}</span>
             </div>
         </div>

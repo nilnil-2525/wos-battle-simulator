@@ -1,27 +1,27 @@
 :root {
-  /* ダークモード (デフォルト) */
-  --bg-gradient-start: #111e38;
-  --bg-gradient-end: #070b14;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --panel-bg: rgba(15, 23, 42, 0.75);
-  --panel-border: rgba(148, 163, 184, 0.12);
-  --panel-shadow: rgba(0, 0, 0, 0.4);
-  --scrollbar-track: #070b14;
-  --scrollbar-thumb: #1e293b;
-  --header-bg: rgba(2, 6, 23, 0.85); /* slate-950/85 */
+  /* ダークモード (デフォルト) - ターミナル風グリーンテーマ */
+  --bg-gradient-start: #090e1a; /* ほぼ黒に近いダークネイビー */
+  --bg-gradient-end: #020306;
+  --text-main: #4ade80; /* ターミナル黄緑 (green-400: 目に優しい蛍光グリーン) */
+  --text-muted: #166534; /* 暗めのグリーン (green-800) */
+  --panel-bg: rgba(10, 15, 30, 0.85);
+  --panel-border: rgba(74, 222, 128, 0.15); /* 緑がかった透明枠線 */
+  --panel-shadow: rgba(0, 0, 0, 0.6);
+  --scrollbar-track: #020306;
+  --scrollbar-thumb: #166534;
+  --header-bg: rgba(2, 3, 6, 0.9);
   
-  --panel-nested-bg: rgba(15, 23, 42, 0.4); /* slate-900/40 */
-  --panel-nested-border: rgba(30, 41, 59, 0.8); /* slate-800/80 */
+  --panel-nested-bg: rgba(10, 15, 30, 0.5);
+  --panel-nested-border: rgba(74, 222, 128, 0.25);
   
-  --input-bg: rgba(15, 23, 42, 0.6); /* slate-900/60 */
-  --input-border: rgba(30, 41, 59, 0.8);
-  --input-text: #ffffff;
+  --input-bg: rgba(2, 3, 6, 0.7);
+  --input-border: rgba(74, 222, 128, 0.3);
+  --input-text: #4ade80;
   
-  --log-bg: #020617; /* slate-950 */
-  --log-border: #1e293b; /* slate-800 */
-  --log-text-default: #cbd5e1; /* slate-300 */
-  --log-text-sub: #94a3b8; /* slate-400 */
+  --log-bg: #020306;
+  --log-border: rgba(74, 222, 128, 0.3);
+  --log-text-default: #4ade80;
+  --log-text-sub: #166534;
   
   --ally-panel-bg: rgba(8, 47, 73, 0.4); /* sky-950/40 */
   --ally-panel-border: rgba(8, 145, 178, 0.5); /* sky-900/50 */
@@ -117,7 +117,10 @@
 }
 
 body { 
-  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; 
+  font-family: 'Outfit', 'Noto Sans JP', 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; 
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.015em; 
   background: radial-gradient(circle at top, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%); 
   color: var(--text-main); 
   min-height: 100vh;
@@ -268,7 +271,23 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
   background: var(--input-bg) !important;
   border: 1px solid var(--input-border) !important;
   color: var(--input-text) !important;
-  transition: background 0.3s ease, border 0.3s ease, color 0.3s ease;
+  color-scheme: dark; /* スピンボタンをダークモードに適合させる */
+  transition: background 0.3s ease, border 0.3s ease, color 0.3s ease, box-shadow 0.2s ease;
+}
+
+.theme-input:focus {
+  outline: none;
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+}
+
+[data-theme="light"] .theme-input {
+  color-scheme: light;
+}
+
+[data-theme="light"] .theme-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
 }
 
 .theme-log-container {
