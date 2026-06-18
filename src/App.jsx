@@ -301,17 +301,38 @@ const App = () => {
                     />
                     
                     <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:h-auto lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-4">
-                        <div className="flex theme-tab-container p-1 rounded-lg shrink-0">
-                            <button onClick={() => setActiveTab('single')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${activeTab === 'single' ? 'theme-tab-btn-active' : 'theme-tab-btn-inactive'}`}>📝 1回テスト</button>
-                            <button onClick={() => setActiveTab('montecarlo')} className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${activeTab === 'montecarlo' ? 'theme-tab-btn-active' : 'theme-tab-btn-inactive'}`}>📊 1000回テスト</button>
-                            <button onClick={handleReset} className="flex-1 py-1.5 text-xs font-bold theme-nested-panel rounded-md transition shadow-sm ml-1">🔄 初期化</button>
+                        <div className="flex theme-tab-container p-1 rounded-full shrink-0">
+                            <button onClick={() => setActiveTab('single')} className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition ${activeTab === 'single' ? 'theme-tab-btn-active' : 'theme-tab-btn-inactive'}`}>📝 詳細ログ検証 (1回)</button>
+                            <button onClick={() => setActiveTab('montecarlo')} className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition ${activeTab === 'montecarlo' ? 'theme-tab-btn-active' : 'theme-tab-btn-inactive'}`}>📊 確率統計分析 (1000回)</button>
+                        </div>
+
+                        <div className="flex gap-2 items-center justify-between px-1.5 py-0.5 shrink-0">
+                            <span className="text-[11px] theme-text-muted font-mono font-bold">
+                                現在の状態: {turn > 0 ? `Turn ${turn} (戦闘中)` : '未戦闘 (初期化済)'}
+                            </span>
+                            <button 
+                                onClick={handleReset} 
+                                className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition shadow-sm active:scale-95 flex items-center gap-1 border ${
+                                    theme === 'dark' 
+                                        ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' 
+                                        : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                }`}
+                            >
+                                🔄 戦闘リセット
+                            </button>
                         </div>
 
                         {activeTab === 'single' && (
                             <>
-                                <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col gap-2 shrink-0 border border-slate-700/10">
-                                    <button onClick={() => executeBattle(true)} disabled={isGameOver} className="w-full frozen-btn-indigo font-bold py-2 rounded transition active:scale-95 text-sm">1ターン進める</button>
-                                    <button onClick={() => executeBattle(false)} disabled={isGameOver} className="w-full frozen-btn-amber font-bold py-2 rounded transition active:scale-95 text-sm">一気に結果を見る</button>
+                                <div className="ice-panel p-2.5 rounded-xl shadow-md shrink-0 border border-slate-700/10">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => executeBattle(true)} disabled={isGameOver} className="flex-1 frozen-btn-indigo font-bold py-2 rounded transition active:scale-95 text-xs flex items-center justify-center gap-1">
+                                            ⏭️ 1ターン進める
+                                        </button>
+                                        <button onClick={() => executeBattle(false)} disabled={isGameOver} className="flex-1 frozen-btn-amber font-bold py-2 rounded transition active:scale-95 text-xs flex items-center justify-center gap-1">
+                                            ⏩ 戦闘終了まで進める
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="ice-panel p-3 rounded-xl shadow-md shrink-0 border border-slate-700/10">
@@ -479,7 +500,7 @@ const App = () => {
                                 <button onClick={executeMonteCarlo} disabled={turn > 0} className="w-full frozen-btn-indigo font-bold py-3 rounded-lg transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
                                     🚀 1000回シミュレーション実行
                                 </button>
-                                {turn > 0 && <p className="text-xs text-red-500 text-center font-bold">※テストを行うには、初期化ボタンでTurn0に戻してください。</p>}
+                                {turn > 0 && <p className="text-xs text-red-500 text-center font-bold">※実行するには、上の「戦闘リセット」ボタンで状態をリセットしてください。</p>}
 
                                 {simResults && (
                                     <div className="flex flex-col gap-4 animate-fade-in">
