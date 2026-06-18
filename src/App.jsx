@@ -122,7 +122,11 @@ const App = () => {
 
     useEffect(() => { 
         if (logContainerRef.current && activeTab === 'single') {
-            logContainerRef.current.scrollTo({ top: logContainerRef.current.scrollHeight, behavior: 'smooth' });
+            const container = logContainerRef.current;
+            // 描画更新完了後のタイミングを正確に捉え、瞬時に一番下までスクロール追従させる
+            requestAnimationFrame(() => {
+                container.scrollTop = container.scrollHeight;
+            });
         }
     }, [logs, activeTab]);
 
@@ -472,24 +476,56 @@ const App = () => {
                                 </div>
 
                                 <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col min-h-[400px] lg:flex-1 lg:min-h-0 border border-slate-700/10">
-                                    <h3 className="font-bold mb-1 text-xs border-b border-slate-700/20 pb-1 shrink-0">詳細戦闘ログ</h3>
-                                    <div ref={logContainerRef} className="theme-log-container rounded flex-1 overflow-y-auto p-2 text-[11.5px] font-mono leading-relaxed whitespace-pre-wrap">
+                                    <h3 className="font-bold mb-1.5 text-xs border-b border-slate-700/20 pb-1.5 shrink-0 flex items-center justify-between">
+                                        <span>📋 詳細戦闘ログ</span>
+                                        {logs.length > 0 && <span className="text-[10px] theme-text-muted font-mono">{logs.length} 件のログ</span>}
+                                    </h3>
+                                    <div ref={logContainerRef} className="theme-log-container rounded-lg flex-1 overflow-y-auto max-h-[450px] lg:max-h-[750px] p-2.5 text-[11px] font-mono leading-relaxed whitespace-pre-wrap shadow-inner">
                                         {logs.length === 0 && <p className="theme-text-muted text-center mt-4">ボタンを押して開始してください。</p>}
-                                        {logs.map((log, i) => (
-                                            <div key={i} className={`mb-1 ${
-                                                log.includes('✨') ? 'text-yellow-300 font-bold bg-yellow-900/30 px-1 rounded' :
-                                                log.includes('🛡️') ? 'text-emerald-400 font-bold' :
-                                                log.includes('🌀') ? 'text-purple-400 font-bold' :
-                                                log.includes('⚡') ? 'text-orange-400 font-bold bg-orange-950/20 px-1 rounded' :
-                                                log.includes('🎲') ? 'text-pink-300 font-bold bg-pink-950/40 px-1 rounded' :
-                                                log.includes('空振り') ? 'text-pink-400 font-bold bg-pink-900/10' :
-                                                log.includes('▶ [味方') ? 'text-blue-400 font-bold' : 
-                                                log.includes('▶ [敵') ? 'text-red-400 font-bold' : 
-                                                log.includes('💥') ? 'text-yellow-400 font-bold ml-2' : 
-                                                log.includes('====') ? 'text-white mt-3 font-bold border-b border-slate-600 bg-slate-900/50 p-1' : 
-                                                log.includes('┣') || log.includes('┃') || log.includes('┗') || log.includes('通常Mod:') || log.includes('追加Mod:') || log.includes('通常:') || log.includes('追加:') ? 'text-slate-400' : 
-                                                'theme-text-muted'}`}>{log}</div>
-                                        ))}
+                                        {logs.map((log, i) => {
+                                            const isHeader = log.includes('====');
+                                            const displayLog = isHeader ? log.replace(/====/g, '').trim() : log;
+                                            
+                                            // ログの分類に応じたスタイル選択 (テーマ動的対応)
+                                            const isDark = theme === 'dark';
+                                            let className = "mb-1 pl-1 ";
+                                            
+                                            if (isHeader) {
+                                                className += isDark 
+                                                    ? 'text-cyan-400 mt-4 mb-2 font-bold border-b border-cyan-500/20 bg-cyan-950/15 px-2 py-1 rounded flex items-center'
+                                                    : 'text-sky-700 mt-4 mb-2 font-bold border-b border-sky-200 bg-sky-50/70 px-2 py-1 rounded flex items-center shadow-sm';
+                                            } else if (log.includes('▶ [味方')) {
+                                                className += isDark 
+                                                    ? 'text-sky-300 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-950/10 rounded-r' 
+                                                    : 'text-sky-700 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-50/50 rounded-r';
+                                            } else if (log.includes('▶ [敵')) {
+                                                className += isDark 
+                                                    ? 'text-rose-300 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-950/10 rounded-r' 
+                                                    : 'text-rose-700 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-50/50 rounded-r';
+                                            } else if (log.includes('✨') || log.includes('🛡️') || log.includes('🌀') || log.includes('⚡') || log.includes('🎲')) {
+                                                className += isDark
+                                                    ? 'text-amber-300 font-bold bg-amber-950/20 px-2 py-0.5 rounded border border-amber-500/15 my-0.5 ml-2'
+                                                    : 'text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 my-0.5 ml-2';
+                                            } else if (log.includes('💥')) {
+                                                className += isDark ? 'text-yellow-300 font-bold ml-3' : 'text-yellow-700 font-bold ml-3';
+                                            } else if (log.includes('空振り')) {
+                                                className += isDark ? 'text-pink-400 font-bold bg-pink-950/10 px-1 rounded ml-2' : 'text-pink-700 font-bold bg-pink-50 px-1 rounded ml-2 border border-pink-100';
+                                            } else if (log.includes('★')) {
+                                                className += isDark
+                                                    ? 'text-emerald-400 font-bold text-center bg-emerald-950/20 p-2 rounded-lg border border-emerald-500/20 my-3 text-xs shadow-sm'
+                                                    : 'text-emerald-700 font-bold text-center bg-emerald-50 p-2 rounded-lg border border-emerald-200 my-3 text-xs shadow-sm';
+                                            } else if (log.includes('┣') || log.includes('┃') || log.includes('┗') || log.includes('通常Mod:') || log.includes('追加Mod:') || log.includes('通常:') || log.includes('追加:')) {
+                                                className += isDark ? 'text-slate-500 text-[10px] ml-4 font-normal' : 'text-slate-400 text-[10px] ml-4 font-normal';
+                                            } else {
+                                                className += isDark ? 'text-slate-300 ml-2' : 'text-slate-600 ml-2';
+                                            }
+                                            
+                                            return (
+                                                <div key={i} className={className}>
+                                                    {displayLog}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </>
