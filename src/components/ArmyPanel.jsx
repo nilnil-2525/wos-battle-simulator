@@ -168,9 +168,12 @@ export const ArmyPanel = ({
 
     return (
         <div className={`flex-1 ice-panel ${side === 'ally' ? 'ice-panel-ally' : 'ice-panel-enemy'} p-3 rounded-xl border-t-4 ${borderColor}`}>
-            <h2 className={`text-lg font-black ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'} mb-3 flex justify-between`}>
-                {title}
-                <span className="text-sm font-normal theme-text-muted">総兵力: {(army.shield.troops + army.spear.troops + army.bow.troops).toLocaleString()}</span>
+            <h2 className={`text-lg font-black ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'} mb-3 pb-1.5 border-b ${side === 'ally' ? 'border-sky-500/20' : 'border-red-500/20'} flex justify-between items-baseline`}>
+                <div className="flex items-baseline gap-2">
+                    <span>{title}</span>
+                    <span className="text-[11px] opacity-75 font-mono tracking-wider">{side === 'ally' ? 'ALLY' : 'ENEMY'}</span>
+                </div>
+                <span className="text-sm font-normal theme-text-muted font-mono">総兵力: {(army.shield.troops + army.spear.troops + army.bow.troops).toLocaleString()}</span>
             </h2>
             <div className="theme-hero-section p-2 rounded-lg shadow-inner mb-4">
                 <div className="flex justify-between items-center mb-2 border-b border-slate-650/40 pb-1">
