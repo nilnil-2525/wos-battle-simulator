@@ -13,7 +13,32 @@ export const HeroSelector = ({ side, role, label, allowedType, value, onChange, 
     </div>
 );
 
-export const UnitInput = ({ label, unit, type, side, onChange, disabled, isStunned }) => {
+export const UnitInput = ({ 
+    label, 
+    unit, 
+    type, 
+    side, 
+    onChange, 
+    disabled, 
+    isStunned,
+    unitPresets = { 1: null, 2: null, 3: null, 4: null, 5: null },
+    onLoadUnitPreset,
+    onSaveUnitPreset
+}) => {
+    const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+    const handleSlotClick = (num) => {
+        if (isRegisterMode) {
+            onSaveUnitPreset(type, num, unit);
+            setIsRegisterMode(false);
+        } else {
+            const preset = unitPresets[num];
+            if (preset) {
+                onLoadUnitPreset(side, type, preset);
+            }
+        }
+    };
+
     const base = baseStatsData[type][unit.tier] || { attack: 0, lethality: 0, defense: 0, hp: 0 };
     const fAtk = Math.floor(base.attack * (100 + unit.buffs.attack) / 100);
     const fLet = Math.floor(base.lethality * (100 + unit.buffs.lethality) / 100);
@@ -23,7 +48,43 @@ export const UnitInput = ({ label, unit, type, side, onChange, disabled, isStunn
     return (
         <div className={`p-3 mb-3 rounded-xl border relative ${side === 'ally' ? 'theme-unit-panel-ally' : 'theme-unit-panel-enemy'}`}>
             {isStunned && <div className="absolute top-2 right-2 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow animate-pulse">🌀 スタン中</div>}
-            <h4 className={`font-bold text-sm mb-2 ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'}`}>{label}</h4>
+            
+            <div className="flex justify-between items-center mb-2 border-b border-slate-650/40 pb-1">
+                <h4 className={`font-bold text-sm ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'}`}>{label}</h4>
+                <button 
+                    onClick={() => setIsRegisterMode(!isRegisterMode)}
+                    className={`preset-btn-register ${isRegisterMode ? 'active' : ''}`}
+                    disabled={disabled}
+                >
+                    {isRegisterMode ? 'スロット選択...' : 'Preset 💾'}
+                </button>
+            </div>
+
+            <div className="w-full mb-3 border-b border-slate-650/20 pb-2">
+                <div className="preset-slots-container">
+                    {[1, 2, 3, 4, 5].map(num => {
+                        const hasData = !!unitPresets[num];
+                        return (
+                            <button
+                                key={num}
+                                onClick={() => handleSlotClick(num)}
+                                className={`preset-slot-btn ${
+                                    isRegisterMode 
+                                        ? 'register-active' 
+                                        : hasData 
+                                            ? 'has-data' 
+                                            : 'empty'
+                                }`}
+                                disabled={disabled}
+                                title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
+                            >
+                                {num}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             <div className="flex items-center gap-2 mb-2">
                 <label className="text-[11px] font-bold theme-text-muted">Tier</label>
                 <select className="border border-slate-700/20 rounded p-0.5 theme-input font-bold text-xs" value={unit.tier} onChange={(e) => onChange(side, type, 'tier', Number(e.target.value))} disabled={disabled}>
@@ -65,7 +126,14 @@ export const ArmyPanel = ({
     heroDB,
     heroPresets = { 1: null, 2: null, 3: null, 4: null, 5: null },
     onLoadHeroPreset,
-    onSaveHeroPreset
+    onSaveHeroPreset,
+    unitPresets = {
+        shield: { 1: null, 2: null, 3: null, 4: null, 5: null },
+        spear: { 1: null, 2: null, 3: null, 4: null, 5: null },
+        bow: { 1: null, 2: null, 3: null, 4: null, 5: null }
+    },
+    onLoadUnitPreset,
+    onSaveUnitPreset
 }) => {
     const [isRegisterMode, setIsRegisterMode] = useState(false);
 
@@ -95,7 +163,7 @@ export const ArmyPanel = ({
                         className={`preset-btn-register ${isRegisterMode ? 'active' : ''}`}
                         disabled={turn > 0}
                     >
-                        {isRegisterMode ? '登録スロットを選択...' : '登録'}
+                        {isRegisterMode ? 'スロット選択...' : 'Preset 💾'}
                     </button>
                 </div>
                 <div className="w-full mb-3 border-b border-slate-650/20 pb-2">
@@ -114,7 +182,7 @@ export const ArmyPanel = ({
                                                 : 'empty'
                                     }`}
                                     disabled={turn > 0}
-                                    title={isRegisterMode ? `${num}番に登録` : hasData ? `スロット${num}をロード` : '未登録'}
+                                    title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
                                 >
                                     {num}
                                 </button>
@@ -136,9 +204,42 @@ export const ArmyPanel = ({
                     </div>
                 </div>
             </div>
-            <UnitInput label="🛡️ 盾兵" unit={army.shield} type="shield" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.shield.stunned} />
-            <UnitInput label="🗡️ 槍兵" unit={army.spear} type="spear" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.spear.stunned} />
-            <UnitInput label="🏹 弓兵" unit={army.bow} type="bow" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.bow.stunned} />
+            <UnitInput 
+                label="🛡️ 盾兵" 
+                unit={army.shield} 
+                type="shield" 
+                side={side} 
+                onChange={onUnitChange} 
+                disabled={turn > 0} 
+                isStunned={army.shield.stunned} 
+                unitPresets={unitPresets ? unitPresets.shield : undefined}
+                onLoadUnitPreset={onLoadUnitPreset}
+                onSaveUnitPreset={onSaveUnitPreset}
+            />
+            <UnitInput 
+                label="🗡️ 槍兵" 
+                unit={army.spear} 
+                type="spear" 
+                side={side} 
+                onChange={onUnitChange} 
+                disabled={turn > 0} 
+                isStunned={army.spear.stunned} 
+                unitPresets={unitPresets ? unitPresets.spear : undefined}
+                onLoadUnitPreset={onLoadUnitPreset}
+                onSaveUnitPreset={onSaveUnitPreset}
+            />
+            <UnitInput 
+                label="🏹 弓兵" 
+                unit={army.bow} 
+                type="bow" 
+                side={side} 
+                onChange={onUnitChange} 
+                disabled={turn > 0} 
+                isStunned={army.bow.stunned} 
+                unitPresets={unitPresets ? unitPresets.bow : undefined}
+                onLoadUnitPreset={onLoadUnitPreset}
+                onSaveUnitPreset={onSaveUnitPreset}
+            />
         </div>
     );
 };

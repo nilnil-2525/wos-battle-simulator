@@ -39,6 +39,19 @@ const App = () => {
             return { 1: null, 2: null, 3: null, 4: null, 5: null };
         }
     });
+    const [unitPresets, setUnitPresets] = useState(() => {
+        const defaultPresets = {
+            shield: { 1: null, 2: null, 3: null, 4: null, 5: null },
+            spear: { 1: null, 2: null, 3: null, 4: null, 5: null },
+            bow: { 1: null, 2: null, 3: null, 4: null, 5: null }
+        };
+        try {
+            const saved = localStorage.getItem('wos_unit_presets');
+            return saved ? JSON.parse(saved) : defaultPresets;
+        } catch (e) {
+            return defaultPresets;
+        }
+    });
     const [logs, setLogs] = useState([]);
     const [turn, setTurn] = useState(0);
     const [fixedMinTroops, setFixedMinTroops] = useState(0);
@@ -56,6 +69,31 @@ const App = () => {
         setHeroPresets(prev => {
             const newPresets = { ...prev, [slot]: JSON.parse(JSON.stringify(heroes)) };
             localStorage.setItem('wos_hero_presets', JSON.stringify(newPresets));
+            return newPresets;
+        });
+    };
+
+    const handleLoadUnitPreset = (side, type, presetUnit) => {
+        if (!presetUnit) return;
+        setArmyData(prev => {
+            const newData = JSON.parse(JSON.stringify(prev));
+            newData[side][type].tier = presetUnit.tier;
+            newData[side][type].initialTroops = presetUnit.initialTroops;
+            newData[side][type].troops = presetUnit.initialTroops;
+            newData[side][type].buffs = JSON.parse(JSON.stringify(presetUnit.buffs));
+            return newData;
+        });
+    };
+
+    const handleSaveUnitPreset = (type, slot, unitData) => {
+        setUnitPresets(prev => {
+            const newPresets = JSON.parse(JSON.stringify(prev));
+            newPresets[type][slot] = {
+                tier: unitData.tier,
+                initialTroops: unitData.initialTroops,
+                buffs: JSON.parse(JSON.stringify(unitData.buffs))
+            };
+            localStorage.setItem('wos_unit_presets', JSON.stringify(newPresets));
             return newPresets;
         });
     };
@@ -247,6 +285,9 @@ const App = () => {
                         heroPresets={heroPresets}
                         onLoadHeroPreset={handleLoadHeroPreset}
                         onSaveHeroPreset={handleSaveHeroPreset}
+                        unitPresets={unitPresets}
+                        onLoadUnitPreset={handleLoadUnitPreset}
+                        onSaveUnitPreset={handleSaveUnitPreset}
                     />
                     
                     <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:h-auto lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-4">
@@ -420,6 +461,9 @@ const App = () => {
                         heroPresets={heroPresets}
                         onLoadHeroPreset={handleLoadHeroPreset}
                         onSaveHeroPreset={handleSaveHeroPreset}
+                        unitPresets={unitPresets}
+                        onLoadUnitPreset={handleLoadUnitPreset}
+                        onSaveUnitPreset={handleSaveUnitPreset}
                     />
                 </div>
             </div>
