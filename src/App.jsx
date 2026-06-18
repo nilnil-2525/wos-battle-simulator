@@ -260,8 +260,8 @@ const App = () => {
 
             <header className="w-full theme-header shadow-lg relative z-20 mb-6">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <h1 className="text-2xl font-black tracking-wider flex items-center gap-2 text-sky-400">
-                        ⚔️ WOS Battle Sumilator
+                    <h1 className="flex items-center gap-2 app-title">
+                        ⚔️ WOS Battle Simulator
                     </h1>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setShowDict(!showDict)} className="text-sm frozen-btn-amber px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1">
