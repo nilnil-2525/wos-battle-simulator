@@ -25,7 +25,13 @@ export const applyGameData = (data) => {
 };
 
 const App = () => {
-    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+    const [theme, setTheme] = useState(() => {
+        try {
+            return localStorage.getItem('theme') || 'dark';
+        } catch (e) {
+            return 'dark';
+        }
+    });
     const [heroDB, setHeroDB] = useState(JSON.parse(JSON.stringify(INITIAL_HERO_DB)));
     const [armyData, setArmyData] = useState({ 
         ally: JSON.parse(JSON.stringify(initialArmyState)), 
@@ -107,7 +113,11 @@ const App = () => {
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {
+            // Ignore storage restrictions
+        }
     }, [theme]);
 
     useEffect(() => { 
