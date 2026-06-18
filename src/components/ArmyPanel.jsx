@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { baseStatsData } from '../utils/battleSimulator.js';
 
 export const HeroSelector = ({ side, role, label, allowedType, value, onChange, disabled, heroDB }) => (
@@ -52,27 +52,93 @@ export const UnitInput = ({ label, unit, type, side, onChange, disabled, isStunn
     );
 };
 
-export const ArmyPanel = ({ side, title, army, bgColor, borderColor, titleColor, turn, onHeroChange, onUnitChange, heroDB }) => (
-    <div className={`flex-1 ice-panel ${side === 'ally' ? 'ice-panel-ally' : 'ice-panel-enemy'} p-3 rounded-xl border-t-4 ${borderColor}`}>
-        <h2 className={`text-lg font-black ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'} mb-3 flex justify-between`}>{title}<span className="text-sm font-normal theme-text-muted">総兵力: {(army.shield.troops + army.spear.troops + army.bow.troops).toLocaleString()}</span></h2>
-        <div className="theme-hero-section p-2 rounded-lg shadow-inner mb-4">
-            <h4 className="font-bold text-yellow-500 text-xs mb-2 border-b border-slate-650/40 pb-1">👑 英雄編成</h4>
-            <div className="grid grid-cols-2 gap-2">
-                <div>
-                    <HeroSelector side={side} role="leaderShield" label="盾リーダー" allowedType="shield" value={army.heroes.leaderShield} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
-                    <HeroSelector side={side} role="leaderSpear" label="槍リーダー" allowedType="spear" value={army.heroes.leaderSpear} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
-                    <HeroSelector side={side} role="leaderBow" label="弓リーダー" allowedType="bow" value={army.heroes.leaderBow} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+export const ArmyPanel = ({ 
+    side, 
+    title, 
+    army, 
+    bgColor, 
+    borderColor, 
+    titleColor, 
+    turn, 
+    onHeroChange, 
+    onUnitChange, 
+    heroDB,
+    heroPresets = { 1: null, 2: null, 3: null, 4: null, 5: null },
+    onLoadHeroPreset,
+    onSaveHeroPreset
+}) => {
+    const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+    const handleSlotClick = (num) => {
+        if (isRegisterMode) {
+            onSaveHeroPreset(num, army.heroes);
+            setIsRegisterMode(false);
+        } else {
+            const preset = heroPresets[num];
+            if (preset) {
+                onLoadHeroPreset(side, preset);
+            }
+        }
+    };
+
+    return (
+        <div className={`flex-1 ice-panel ${side === 'ally' ? 'ice-panel-ally' : 'ice-panel-enemy'} p-3 rounded-xl border-t-4 ${borderColor}`}>
+            <h2 className={`text-lg font-black ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'} mb-3 flex justify-between`}>
+                {title}
+                <span className="text-sm font-normal theme-text-muted">総兵力: {(army.shield.troops + army.spear.troops + army.bow.troops).toLocaleString()}</span>
+            </h2>
+            <div className="theme-hero-section p-2 rounded-lg shadow-inner mb-4">
+                <div className="flex justify-between items-center mb-2 border-b border-slate-650/40 pb-1">
+                    <h4 className="font-bold text-yellow-500 text-xs">👑 英雄編成</h4>
+                    <button 
+                        onClick={() => setIsRegisterMode(!isRegisterMode)}
+                        className={`preset-btn-register ${isRegisterMode ? 'active' : ''}`}
+                        disabled={turn > 0}
+                    >
+                        {isRegisterMode ? '登録スロットを選択...' : '登録'}
+                    </button>
                 </div>
-                <div>
-                    <HeroSelector side={side} role="rider1" label="乗り手1" value={army.heroes.rider1} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
-                    <HeroSelector side={side} role="rider2" label="乗り手2" value={army.heroes.rider2} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
-                    <HeroSelector side={side} role="rider3" label="乗り手3" value={army.heroes.rider3} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
-                    <HeroSelector side={side} role="rider4" label="乗り手4" value={army.heroes.rider4} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                <div className="w-full mb-3 border-b border-slate-650/20 pb-2">
+                    <div className="preset-slots-container">
+                        {[1, 2, 3, 4, 5].map(num => {
+                            const hasData = !!heroPresets[num];
+                            return (
+                                <button
+                                    key={num}
+                                    onClick={() => handleSlotClick(num)}
+                                    className={`preset-slot-btn ${
+                                        isRegisterMode 
+                                            ? 'register-active' 
+                                            : hasData 
+                                                ? 'has-data' 
+                                                : 'empty'
+                                    }`}
+                                    disabled={turn > 0}
+                                    title={isRegisterMode ? `${num}番に登録` : hasData ? `スロット${num}をロード` : '未登録'}
+                                >
+                                    {num}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <div>
+                        <HeroSelector side={side} role="leaderShield" label="盾リーダー" allowedType="shield" value={army.heroes.leaderShield} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                        <HeroSelector side={side} role="leaderSpear" label="槍リーダー" allowedType="spear" value={army.heroes.leaderSpear} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                        <HeroSelector side={side} role="leaderBow" label="弓リーダー" allowedType="bow" value={army.heroes.leaderBow} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                    </div>
+                    <div>
+                        <HeroSelector side={side} role="rider1" label="乗り手1" value={army.heroes.rider1} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                        <HeroSelector side={side} role="rider2" label="乗り手2" value={army.heroes.rider2} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                        <HeroSelector side={side} role="rider3" label="乗り手3" value={army.heroes.rider3} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                        <HeroSelector side={side} role="rider4" label="乗り手4" value={army.heroes.rider4} onChange={onHeroChange} disabled={turn > 0} heroDB={heroDB} />
+                    </div>
                 </div>
             </div>
+            <UnitInput label="🛡️ 盾兵" unit={army.shield} type="shield" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.shield.stunned} />
+            <UnitInput label="🗡️ 槍兵" unit={army.spear} type="spear" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.spear.stunned} />
+            <UnitInput label="🏹 弓兵" unit={army.bow} type="bow" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.bow.stunned} />
         </div>
-        <UnitInput label="🛡️ 盾兵" unit={army.shield} type="shield" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.shield.stunned} />
-        <UnitInput label="🗡️ 槍兵" unit={army.spear} type="spear" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.spear.stunned} />
-        <UnitInput label="🏹 弓兵" unit={army.bow} type="bow" side={side} onChange={onUnitChange} disabled={turn > 0} isStunned={army.bow.stunned} />
-    </div>
-);
+    );
+};

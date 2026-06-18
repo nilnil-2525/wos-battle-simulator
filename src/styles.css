@@ -350,3 +350,84 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 [data-theme="light"] .theme-log-container .text-red-400 { color: #b91c1c; }
 [data-theme="light"] .theme-log-container .text-white { color: #0f172a; background-color: rgba(226, 232, 240, 0.8); }
 [data-theme="light"] .theme-log-container .text-slate-400 { color: #475569; }
+
+/* プリセット登録・読み込みボタン */
+.preset-btn-register {
+  background: linear-gradient(135deg, var(--btn-indigo-start) 0%, var(--btn-indigo-end) 100%);
+  color: #ffffff;
+  border: 1px solid var(--btn-indigo-border);
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: bold;
+  padding: 2px 6px;
+  font-size: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px var(--btn-shadow);
+}
+.preset-btn-register:hover {
+  filter: brightness(1.1);
+}
+
+.preset-btn-register.active {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+  animation: pulse-preset 1.5s infinite;
+}
+
+.preset-slots-container {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.preset-slot-btn {
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 登録モード中のスロットボタン */
+.preset-slot-btn.register-active {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+.preset-slot-btn.register-active:hover {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+/* 通常時：データ有り */
+.preset-slot-btn.has-data {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+  color: #ffffff;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+.preset-slot-btn.has-data:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  filter: brightness(1.1);
+}
+
+/* 通常時：データ無し */
+.preset-slot-btn.empty {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--input-border);
+}
+.preset-slot-btn.empty:hover {
+  background: var(--panel-nested-border);
+  color: var(--text-main);
+}
+
+@keyframes pulse-preset {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}

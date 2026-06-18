@@ -31,9 +31,34 @@ const App = () => {
         ally: JSON.parse(JSON.stringify(initialArmyState)), 
         enemy: JSON.parse(JSON.stringify(initialArmyState)) 
     });
+    const [heroPresets, setHeroPresets] = useState(() => {
+        try {
+            const saved = localStorage.getItem('wos_hero_presets');
+            return saved ? JSON.parse(saved) : { 1: null, 2: null, 3: null, 4: null, 5: null };
+        } catch (e) {
+            return { 1: null, 2: null, 3: null, 4: null, 5: null };
+        }
+    });
     const [logs, setLogs] = useState([]);
     const [turn, setTurn] = useState(0);
     const [fixedMinTroops, setFixedMinTroops] = useState(0);
+
+    const handleLoadHeroPreset = (side, presetHeroes) => {
+        if (!presetHeroes) return;
+        setArmyData(prev => {
+            const newData = JSON.parse(JSON.stringify(prev));
+            newData[side].heroes = JSON.parse(JSON.stringify(presetHeroes));
+            return newData;
+        });
+    };
+
+    const handleSaveHeroPreset = (slot, heroes) => {
+        setHeroPresets(prev => {
+            const newPresets = { ...prev, [slot]: JSON.parse(JSON.stringify(heroes)) };
+            localStorage.setItem('wos_hero_presets', JSON.stringify(newPresets));
+            return newPresets;
+        });
+    };
     
     const [activeTab, setActiveTab] = useState('single');
     const [simResults, setSimResults] = useState(null);
@@ -219,6 +244,9 @@ const App = () => {
                         onHeroChange={handleHeroChange} 
                         onUnitChange={handleUnitChange} 
                         heroDB={heroDB} 
+                        heroPresets={heroPresets}
+                        onLoadHeroPreset={handleLoadHeroPreset}
+                        onSaveHeroPreset={handleSaveHeroPreset}
                     />
                     
                     <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:h-auto lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-4">
@@ -389,6 +417,9 @@ const App = () => {
                         onHeroChange={handleHeroChange} 
                         onUnitChange={handleUnitChange} 
                         heroDB={heroDB} 
+                        heroPresets={heroPresets}
+                        onLoadHeroPreset={handleLoadHeroPreset}
+                        onSaveHeroPreset={handleSaveHeroPreset}
                     />
                 </div>
             </div>
