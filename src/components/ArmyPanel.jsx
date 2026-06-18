@@ -102,12 +102,14 @@ export const UnitInput = ({
                     <div><label className="block text-[10.5px] theme-text-muted text-center">HP</label><input type="number" value={unit.buffs.hp} onChange={(e) => onChange(side, type, 'buffs', { ...unit.buffs, hp: Number(e.target.value)})} disabled={disabled} className="w-full text-center theme-input p-0.5 rounded font-bold text-xs" /></div>
                 </div>
             </div>
-            <div className="text-xs theme-log-container p-1.5 rounded flex justify-between font-mono">
-                <span>攻:{fAtk}</span><span>防:{fDef}</span><span>殺:{fLet}</span><span>HP:{fHp}</span>
-            </div>
-            <div className="mt-2 text-right theme-log-container p-1.5 rounded flex justify-between items-center shadow-inner">
-                <span className="theme-text-muted text-xs">残存兵力</span>
-                <span className={`text-base font-bold ${unit.troops === 0 ? "text-slate-500" : side === 'ally' ? "theme-ally-win-text" : "theme-enemy-win-text"}`}>{unit.troops.toLocaleString()}</span>
+            <div className="text-xs theme-log-container p-2 rounded flex justify-between items-center font-mono">
+                <div className="flex gap-3">
+                    <span>攻: {fAtk}</span><span>防: {fDef}</span><span>殺: {fLet}</span><span>HP: {fHp}</span>
+                </div>
+                <div className="flex items-center gap-2 border-l border-slate-700/30 pl-3 ml-2">
+                    <span className="theme-text-muted text-xs">残存:</span>
+                    <span className={`text-base font-bold ${unit.troops === 0 ? "text-slate-500" : side === 'ally' ? "theme-ally-win-text" : "theme-enemy-win-text"}`}>{unit.troops.toLocaleString()}</span>
+                </div>
             </div>
         </div>
     );
