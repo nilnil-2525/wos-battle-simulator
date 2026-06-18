@@ -65,21 +65,36 @@ export const UnitInput = ({
                     {[1, 2, 3, 4, 5].map(num => {
                         const hasData = !!unitPresets[num];
                         return (
-                            <button
-                                key={num}
-                                onClick={() => handleSlotClick(num)}
-                                className={`preset-slot-btn ${
-                                    isRegisterMode 
-                                        ? 'register-active' 
-                                        : hasData 
-                                            ? 'has-data' 
-                                            : 'empty'
-                                }`}
-                                disabled={disabled}
-                                title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
-                            >
-                                {num}
-                            </button>
+                            <div key={num} className="relative flex-1">
+                                <button
+                                    onClick={() => handleSlotClick(num)}
+                                    className={`preset-slot-btn w-full ${
+                                        isRegisterMode 
+                                            ? 'register-active' 
+                                            : hasData 
+                                                ? 'has-data' 
+                                                : 'empty'
+                                    }`}
+                                    disabled={disabled}
+                                    title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
+                                >
+                                    {num}
+                                </button>
+                                {isRegisterMode && hasData && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`スロット${num}のデータを削除しますか？`)) {
+                                                onSaveUnitPreset(type, num, null);
+                                            }
+                                        }}
+                                        className="preset-slot-clear-btn"
+                                        title="クリア"
+                                    >
+                                        &times;
+                                    </button>
+                                )}
+                            </div>
                         );
                     })}
                 </div>
@@ -173,21 +188,36 @@ export const ArmyPanel = ({
                         {[1, 2, 3, 4, 5].map(num => {
                             const hasData = !!heroPresets[num];
                             return (
-                                <button
-                                    key={num}
-                                    onClick={() => handleSlotClick(num)}
-                                    className={`preset-slot-btn ${
-                                        isRegisterMode 
-                                            ? 'register-active' 
-                                            : hasData 
-                                                ? 'has-data' 
-                                                : 'empty'
-                                    }`}
-                                    disabled={turn > 0}
-                                    title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
-                                >
-                                    {num}
-                                </button>
+                                <div key={num} className="relative flex-1">
+                                    <button
+                                        onClick={() => handleSlotClick(num)}
+                                        className={`preset-slot-btn w-full ${
+                                            isRegisterMode 
+                                                ? 'register-active' 
+                                                : hasData 
+                                                    ? 'has-data' 
+                                                    : 'empty'
+                                        }`}
+                                        disabled={turn > 0}
+                                        title={isRegisterMode ? `${num}番に保存` : hasData ? `スロット${num}をロード` : '未登録'}
+                                    >
+                                        {num}
+                                    </button>
+                                    {isRegisterMode && hasData && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`スロット${num}のデータを削除しますか？`)) {
+                                                    onSaveHeroPreset(num, null);
+                                                }
+                                            }}
+                                            className="preset-slot-clear-btn"
+                                            title="クリア"
+                                        >
+                                            &times;
+                                        </button>
+                                    )}
+                                </div>
                             );
                         })}
                     </div>

@@ -73,7 +73,7 @@ const App = () => {
 
     const handleSaveHeroPreset = (slot, heroes) => {
         setHeroPresets(prev => {
-            const newPresets = { ...prev, [slot]: JSON.parse(JSON.stringify(heroes)) };
+            const newPresets = { ...prev, [slot]: heroes ? JSON.parse(JSON.stringify(heroes)) : null };
             localStorage.setItem('wos_hero_presets', JSON.stringify(newPresets));
             return newPresets;
         });
@@ -94,11 +94,11 @@ const App = () => {
     const handleSaveUnitPreset = (type, slot, unitData) => {
         setUnitPresets(prev => {
             const newPresets = JSON.parse(JSON.stringify(prev));
-            newPresets[type][slot] = {
+            newPresets[type][slot] = unitData ? {
                 tier: unitData.tier,
                 initialTroops: unitData.initialTroops,
                 buffs: JSON.parse(JSON.stringify(unitData.buffs))
-            };
+            } : null;
             localStorage.setItem('wos_unit_presets', JSON.stringify(newPresets));
             return newPresets;
         });

@@ -471,3 +471,31 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
   background-clip: text;
   filter: drop-shadow(0 2px 4px rgba(2, 132, 199, 0.2));
 }
+
+/* プリセットスロットのクリア（×）ボタン */
+.preset-slot-clear-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+  line-height: 1;
+  z-index: 10;
+}
+
+.preset-slot-clear-btn:hover {
+  background: #dc2626;
+  transform: scale(1.15);
+}
