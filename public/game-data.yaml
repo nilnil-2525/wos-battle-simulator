@@ -459,3 +459,31 @@ initialHeroDB:
           timing: "always"
           value: 0.15
           name: "弓被ダメ低下+"
+  greg:
+    name: "グレッグ"
+    type: "bow"
+    skills:
+      "1":
+        -
+          category: "DamageUp1"
+          target: "all"
+          timing: "greg_atk_prob_20_t3"
+          duration: 3
+          value: 0.4
+          name: "殺傷+"
+      "2":
+        -
+          category: "OppDamageDown1"
+          target: "greg_target"
+          timing: "greg_atk_prob_20_t2"
+          duration: 2
+          value: 0.5
+          name: "敵殺傷低下+"
+      "3":
+        -
+          category: "DefenseUp1"
+          target: "all"
+          timing: "always"
+          value: 0.25
+          name: "部隊HP+"
+
