@@ -361,6 +361,49 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         });
     }
 
+    // Greg Skill 1 (殺傷+) - ターン開始時抽選 (20%確率)
+    const greg1SkillsAlly = allySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
+    if (greg1SkillsAlly.length > 0) {
+        if (Math.random() < 0.20) {
+            ally.activeBuffs = ally.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_atk_prob_20_t3'));
+            const sumValue = greg1SkillsAlly.reduce((sum, s) => sum + s.value, 0);
+            const baseSkill = greg1SkillsAlly[0];
+            const mergedSkill = {
+                ...baseSkill,
+                value: sumValue,
+                name: `殺傷+${(sumValue * 100).toFixed(1)}%`
+            };
+            ally.activeBuffs.push({ ...mergedSkill, remain: baseSkill.duration });
+            if (!isSilent && logger) {
+                logger(`  ⚡ [即時スキル発動] グレッグ: 殺傷+${(sumValue * 100).toFixed(1)}% (持続3ターン)`);
+            }
+            greg1SkillsAlly.forEach(s => {
+                recordHeroSkill(ally, s, null, isSilent, false);
+            });
+        }
+    }
+
+    const greg1SkillsEnemy = enemySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
+    if (greg1SkillsEnemy.length > 0) {
+        if (Math.random() < 0.20) {
+            enemy.activeBuffs = enemy.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_atk_prob_20_t3'));
+            const sumValue = greg1SkillsEnemy.reduce((sum, s) => sum + s.value, 0);
+            const baseSkill = greg1SkillsEnemy[0];
+            const mergedSkill = {
+                ...baseSkill,
+                value: sumValue,
+                name: `殺傷+${(sumValue * 100).toFixed(1)}%`
+            };
+            enemy.activeBuffs.push({ ...mergedSkill, remain: baseSkill.duration });
+            if (!isSilent && logger) {
+                logger(`  ⚡ [即時スキル発動] グレッグ: 殺傷+${(sumValue * 100).toFixed(1)}% (持続3ターン)`);
+            }
+            greg1SkillsEnemy.forEach(s => {
+                recordHeroSkill(enemy, s, null, isSilent, false);
+            });
+        }
+    }
+
     if (ally.spear.troops > 0 && ally.spear.tier === 11) {
         if (enemy.bow.troops > 0 && Math.random() < 0.20) { 
             ally.spear.kisyuActiveThisTurn = true; 
@@ -453,29 +496,28 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 ally[atkTypeAlly].stunned = false;
                 ally.stunTurnOffset = (ally.stunTurnOffset || 0) + 1; 
             } else {
-                const gregSkill1s = allySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
-                gregSkill1s.forEach(skill => {
-                    if (Math.random() < 0.20) {
-                        const isExist = ally.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.remain === skill.duration);
-                        if (!isExist) {
-                            ally.activeBuffs.push({ ...skill, remain: skill.duration });
-                            recordHeroSkill(ally, skill, logger, isSilent, true);
-                        }
-                    }
-                });
                 const gregSkill2s = allySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t2');
-                gregSkill2s.forEach(skill => {
+                if (gregSkill2s.length > 0 && atkTypeEnemy && enemy[atkTypeEnemy].troops > 0) {
                     if (Math.random() < 0.20) {
-                        if (atkTypeEnemy && enemy[atkTypeEnemy].troops > 0) {
-                            const debuffTarget = `enemy_${atkTypeEnemy}`;
-                            const isExist = ally.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.target === debuffTarget && b.remain === skill.duration);
-                            if (!isExist) {
-                                ally.activeBuffs.push({ ...skill, target: debuffTarget, remain: skill.duration });
-                                recordHeroSkill(ally, skill, logger, isSilent, true);
-                            }
+                        const debuffTarget = `enemy_${atkTypeEnemy}`;
+                        ally.activeBuffs = ally.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_atk_prob_20_t2' && b.target === debuffTarget));
+                        const sumValue = gregSkill2s.reduce((sum, s) => sum + s.value, 0);
+                        const baseSkill = gregSkill2s[0];
+                        const mergedSkill = {
+                            ...baseSkill,
+                            target: debuffTarget,
+                            value: sumValue,
+                            name: `敵殺傷低下+${(sumValue * 100).toFixed(1)}%`
+                        };
+                        ally.activeBuffs.push({ ...mergedSkill, remain: baseSkill.duration });
+                        if (!isSilent && logger) {
+                            logger(`  ⚡ [即時スキル発動] グレッグ: 敵 ${atkTypeEnemy} の与ダメ低下+${(sumValue * 100).toFixed(1)}% (持続2ターン)`);
                         }
+                        gregSkill2s.forEach(s => {
+                            recordHeroSkill(ally, s, null, isSilent, false);
+                        });
                     }
-                });
+                }
 
                 const finalAllyTarget = (atkTypeAlly === 'spear' && ally.spear.kisyuActiveThisTurn) ? 'bow' : turnAllyTargetNormal;
                 if (finalAllyTarget && enemy[finalAllyTarget].troops > 0) {
@@ -528,29 +570,28 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                 enemy[atkTypeEnemy].stunned = false;
                 enemy.stunTurnOffset = (enemy.stunTurnOffset || 0) + 1; 
             } else {
-                const gregSkill1sE = enemySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t3');
-                gregSkill1sE.forEach(skill => {
-                    if (Math.random() < 0.20) {
-                        const isExist = enemy.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.remain === skill.duration);
-                        if (!isExist) {
-                            enemy.activeBuffs.push({ ...skill, remain: skill.duration });
-                            recordHeroSkill(enemy, skill, logger, isSilent, true);
-                        }
-                    }
-                });
                 const gregSkill2sE = enemySkillPool.filter(s => s.timing === 'greg_atk_prob_20_t2');
-                gregSkill2sE.forEach(skill => {
+                if (gregSkill2sE.length > 0 && atkTypeAlly && ally[atkTypeAlly].troops > 0) {
                     if (Math.random() < 0.20) {
-                        if (atkTypeAlly && ally[atkTypeAlly].troops > 0) {
-                            const debuffTarget = `enemy_${atkTypeAlly}`;
-                            const isExist = enemy.activeBuffs.some(b => b.heroName === skill.heroName && b.name === skill.name && b.target === debuffTarget && b.remain === skill.duration);
-                            if (!isExist) {
-                                enemy.activeBuffs.push({ ...skill, target: debuffTarget, remain: skill.duration });
-                                recordHeroSkill(enemy, skill, logger, isSilent, true);
-                            }
+                        const debuffTarget = `enemy_${atkTypeAlly}`;
+                        enemy.activeBuffs = enemy.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_atk_prob_20_t2' && b.target === debuffTarget));
+                        const sumValue = gregSkill2sE.reduce((sum, s) => sum + s.value, 0);
+                        const baseSkill = gregSkill2sE[0];
+                        const mergedSkill = {
+                            ...baseSkill,
+                            target: debuffTarget,
+                            value: sumValue,
+                            name: `敵殺傷低下+${(sumValue * 100).toFixed(1)}%`
+                        };
+                        enemy.activeBuffs.push({ ...mergedSkill, remain: baseSkill.duration });
+                        if (!isSilent && logger) {
+                            logger(`  ⚡ [即時スキル発動] グレッグ: 敵 ${atkTypeAlly} の与ダメ低下+${(sumValue * 100).toFixed(1)}% (持続2ターン)`);
                         }
+                        gregSkill2sE.forEach(s => {
+                            recordHeroSkill(enemy, s, null, isSilent, false);
+                        });
                     }
-                });
+                }
 
                 const finalEnemyTarget = (atkTypeEnemy === 'spear' && enemy.spear.kisyuActiveThisTurn) ? 'bow' : turnEnemyTargetNormal;
                 if (finalEnemyTarget && ally[finalEnemyTarget].troops > 0) {

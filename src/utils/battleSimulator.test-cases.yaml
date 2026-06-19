@@ -187,3 +187,35 @@
       "greg_グレッグⅠ": 1
       "greg_グレッグⅡ": 1
 
+- name: "13. グレッグ2体乗せ時の確率スキル累積検証 (共通で1回のみ抽選され、殺傷+80%が乗ること)"
+  ally:
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg", rider1: "greg" }
+    greg_active: true # 確率20%スキルを強制発動
+  enemy:
+    shield: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 殺傷80%上昇 (1467 * 1.80 = 2640.6 -> 2640)
+    kills_to_enemy: 2640
+    # 敵盾兵の与ダメージ50%低下デバフ + HP25%バフ (1335 / (1.50 * 1.25) = 712)
+    kills_to_ally: 712
+    skill_trigger_counts:
+      "greg_グレッグⅠ": 2
+      "greg_グレッグⅡ": 1
+
+- name: "14. グレッグのスキル再当選時の上書き検証 (累積されずに上書きリセットされること)"
+  run_turn: 2
+  ally:
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg" }
+    greg_active: true # 確率20%スキルを強制発動
+  enemy:
+    shield: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    # 2ターン目もスキル1が再当選するが、上書きされるため効果は+40%のまま (2ターン累計: 2053 + 2046 = 4099)
+    kills_to_enemy: 4099
+    # 2ターン目もスキル2が再当選するが、上書きされるため敵与ダメ低下は50%のまま (2ターン累計: 712 + 704 = 1416)
+    kills_to_ally: 1416
+    skill_trigger_counts:
+      "greg_グレッグⅠ": 2
+      "greg_グレッグⅡ": 2

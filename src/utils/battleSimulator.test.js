@@ -81,10 +81,12 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
 
             // 3. 進行処理の実行
             // 特殊な発動ターンのある固有スキルに対応するため実行ターン数を決定
-            let runTurn = 1;
-            if (tc.ally?.sonya_active) runTurn = 6;
-            else if (tc.ally?.hendrick_active) runTurn = 3;
-            else if (tc.ally?.mia_i_active) runTurn = 2;
+            let runTurn = tc.run_turn || 1;
+            if (!tc.run_turn) {
+                if (tc.ally?.sonya_active) runTurn = 6;
+                else if (tc.ally?.hendrick_active) runTurn = 3;
+                else if (tc.ally?.mia_i_active) runTurn = 2;
+            }
             
             let battleState = currentArmyData;
             let fixedMinTroops = Math.min(

@@ -465,12 +465,12 @@ initialHeroDB:
     skills:
       "1":
         -
-          category: "DamageUp2"
+          category: "DamageUp1"
           target: "all"
           timing: "greg_atk_prob_20_t3"
           duration: 3
           value: 0.4
-          name: "与ダメ+"
+          name: "殺傷+"
       "2":
         -
           category: "OppDamageDown1"
