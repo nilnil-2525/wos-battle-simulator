@@ -304,6 +304,25 @@ const App = () => {
                         onSaveUnitPreset={handleSaveUnitPreset}
                     />
                     
+                    <ArmyPanel 
+                        side="enemy" 
+                        title="敵" 
+                        army={armyData.enemy} 
+                        bgColor="" 
+                        borderColor="border-red-500" 
+                        titleColor="" 
+                        turn={turn} 
+                        onHeroChange={handleHeroChange} 
+                        onUnitChange={handleUnitChange} 
+                        heroDB={heroDB} 
+                        heroPresets={heroPresets}
+                        onLoadHeroPreset={handleLoadHeroPreset}
+                        onSaveHeroPreset={handleSaveHeroPreset}
+                        unitPresets={unitPresets}
+                        onLoadUnitPreset={handleLoadUnitPreset}
+                        onSaveUnitPreset={handleSaveUnitPreset}
+                    />
+                    
                     <div className="w-full lg:w-1/3 flex flex-col gap-3 lg:h-auto lg:max-h-[calc(100vh-2rem)] lg:sticky lg:top-4">
                         <div className="flex theme-tab-container p-1 rounded-full shrink-0">
                             <button onClick={() => setActiveTab('single')} className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition ${activeTab === 'single' ? 'theme-tab-btn-active' : 'theme-tab-btn-inactive'}`}>📝 詳細ログ検証 (1回)</button>
@@ -589,25 +608,6 @@ const App = () => {
                             </div>
                         )}
                     </div>
-                    
-                    <ArmyPanel 
-                        side="enemy" 
-                        title="敵" 
-                        army={armyData.enemy} 
-                        bgColor="" 
-                        borderColor="border-red-500" 
-                        titleColor="" 
-                        turn={turn} 
-                        onHeroChange={handleHeroChange} 
-                        onUnitChange={handleUnitChange} 
-                        heroDB={heroDB} 
-                        heroPresets={heroPresets}
-                        onLoadHeroPreset={handleLoadHeroPreset}
-                        onSaveHeroPreset={handleSaveHeroPreset}
-                        unitPresets={unitPresets}
-                        onLoadUnitPreset={handleLoadUnitPreset}
-                        onSaveUnitPreset={handleSaveUnitPreset}
-                    />
                 </div>
             </div>
         </>
