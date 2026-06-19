@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WinRateChart, HistogramChart } from './components/Charts.jsx';
 import { ArmyPanel } from './components/ArmyPanel.jsx';
 import { InlineSkillDictionary } from './components/InlineSkillDictionary.jsx';
@@ -106,6 +106,8 @@ const App = () => {
     
     const [activeTab, setActiveTab] = useState('single');
     const [simResults, setSimResults] = useState(null);
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [simProgress, setSimProgress] = useState(0);
     const [showDict, setShowDict] = useState(false);
     const [showEditor, setShowEditor] = useState(false); 
     
@@ -216,30 +218,53 @@ const App = () => {
     };
 
     const executeMonteCarlo = () => {
+        if (isSimulating) return;
+        setIsSimulating(true);
+        setSimProgress(0);
+        setSimResults(null);
+
         const initialArmyData = JSON.parse(JSON.stringify(armyData));
         const results = [];
-        let minTroops = Math.min(getTotalTroops(initialArmyData.ally), getTotalTroops(initialArmyData.enemy));
+        const minTroops = Math.min(getTotalTroops(initialArmyData.ally), getTotalTroops(initialArmyData.enemy));
+        
+        const CHUNK_SIZE = 50;
+        let currentIndex = 0;
 
-        for (let i = 0; i < MONTE_CARLO_RUNS; i++) {
-            let currentArmyData = JSON.parse(JSON.stringify(initialArmyData));
-            let currentTurn = 0;
-            let allyTotal = getTotalTroops(currentArmyData.ally);
-            let enemyTotal = getTotalTroops(currentArmyData.enemy);
+        const runChunk = () => {
+            const limit = Math.min(currentIndex + CHUNK_SIZE, MONTE_CARLO_RUNS);
+            for (let i = currentIndex; i < limit; i++) {
+                let currentArmyData = JSON.parse(JSON.stringify(initialArmyData));
+                let currentTurn = 0;
+                let allyTotal = getTotalTroops(currentArmyData.ally);
+                let enemyTotal = getTotalTroops(currentArmyData.enemy);
 
-            while (allyTotal > 0 && enemyTotal > 0 && currentTurn < MAX_BATTLE_TURNS) {
-                currentTurn++;
-                const { newArmyData } = processOneTurn(currentArmyData, currentTurn, minTroops, heroDB, true);
-                currentArmyData = newArmyData;
-                allyTotal = getTotalTroops(currentArmyData.ally);
-                enemyTotal = getTotalTroops(currentArmyData.enemy);
+                while (allyTotal > 0 && enemyTotal > 0 && currentTurn < MAX_BATTLE_TURNS) {
+                    currentTurn++;
+                    const { newArmyData } = processOneTurn(currentArmyData, currentTurn, minTroops, heroDB, true);
+                    currentArmyData = newArmyData;
+                    allyTotal = getTotalTroops(currentArmyData.ally);
+                    enemyTotal = getTotalTroops(currentArmyData.enemy);
+                }
+                results.push({
+                    winner: allyTotal > 0 && enemyTotal === 0 ? 'ally' : (enemyTotal > 0 && allyTotal === 0 ? 'enemy' : 'draw'),
+                    allySurviving: allyTotal,
+                    enemySurviving: enemyTotal
+                });
             }
-            results.push({
-                winner: allyTotal > 0 && enemyTotal === 0 ? 'ally' : (enemyTotal > 0 && allyTotal === 0 ? 'enemy' : 'draw'),
-                allySurviving: allyTotal,
-                enemySurviving: enemyTotal
-            });
-        }
-        setSimResults(results);
+
+            currentIndex = limit;
+            const progress = Math.round((currentIndex / MONTE_CARLO_RUNS) * 100);
+            setSimProgress(progress);
+
+            if (currentIndex < MONTE_CARLO_RUNS) {
+                requestAnimationFrame(runChunk);
+            } else {
+                setSimResults(results);
+                setIsSimulating(false);
+            }
+        };
+
+        requestAnimationFrame(runChunk);
     };
 
     const isGameOver = turn > 0 && (getTotalTroops(armyData.ally) === 0 || getTotalTroops(armyData.enemy) === 0);
@@ -480,61 +505,17 @@ const App = () => {
                                         <span>📋 詳細戦闘ログ</span>
                                         {logs.length > 0 && <span className="text-[10px] theme-text-muted font-mono">{logs.length} 件のログ</span>}
                                     </h3>
-                                    <div ref={logContainerRef} className="theme-log-container rounded-lg flex-1 overflow-y-auto max-h-[450px] lg:max-h-[750px] p-2.5 text-[11px] font-mono leading-relaxed whitespace-pre-wrap shadow-inner">
-                                        {logs.length === 0 && <p className="theme-text-muted text-center mt-4">ボタンを押して開始してください。</p>}
-                                        {logs.map((log, i) => {
-                                            const isHeader = log.includes('====');
-                                            const displayLog = isHeader ? log.replace(/====/g, '').trim() : log;
-                                            
-                                            // ログの分類に応じたスタイル選択 (テーマ動的対応)
-                                            const isDark = theme === 'dark';
-                                            let className = "mb-1 pl-1 ";
-                                            
-                                            if (isHeader) {
-                                                className += isDark 
-                                                    ? 'text-cyan-400 mt-4 mb-2 font-bold border-b border-cyan-500/20 bg-cyan-950/15 px-2 py-1 rounded flex items-center'
-                                                    : 'text-sky-700 mt-4 mb-2 font-bold border-b border-sky-200 bg-sky-50/70 px-2 py-1 rounded flex items-center shadow-sm';
-                                            } else if (log.includes('▶ [味方')) {
-                                                className += isDark 
-                                                    ? 'text-sky-300 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-950/10 rounded-r' 
-                                                    : 'text-sky-700 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-50/50 rounded-r';
-                                            } else if (log.includes('▶ [敵')) {
-                                                className += isDark 
-                                                    ? 'text-rose-300 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-950/10 rounded-r' 
-                                                    : 'text-rose-700 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-50/50 rounded-r';
-                                            } else if (log.includes('✨') || log.includes('🛡️') || log.includes('🌀') || log.includes('⚡') || log.includes('🎲')) {
-                                                className += isDark
-                                                    ? 'text-amber-300 font-bold bg-amber-950/20 px-2 py-0.5 rounded border border-amber-500/15 my-0.5 ml-2'
-                                                    : 'text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 my-0.5 ml-2';
-                                            } else if (log.includes('💥')) {
-                                                className += isDark ? 'text-yellow-300 font-bold ml-3' : 'text-yellow-700 font-bold ml-3';
-                                            } else if (log.includes('空振り')) {
-                                                className += isDark ? 'text-pink-400 font-bold bg-pink-950/10 px-1 rounded ml-2' : 'text-pink-700 font-bold bg-pink-50 px-1 rounded ml-2 border border-pink-100';
-                                            } else if (log.includes('★')) {
-                                                className += isDark
-                                                    ? 'text-emerald-400 font-bold text-center bg-emerald-950/20 p-2 rounded-lg border border-emerald-500/20 my-3 text-xs shadow-sm'
-                                                    : 'text-emerald-700 font-bold text-center bg-emerald-50 p-2 rounded-lg border border-emerald-200 my-3 text-xs shadow-sm';
-                                            } else if (log.includes('┣') || log.includes('┃') || log.includes('┗') || log.includes('通常Mod:') || log.includes('追加Mod:') || log.includes('通常:') || log.includes('追加:')) {
-                                                className += isDark ? 'text-slate-500 text-[10px] ml-4 font-normal' : 'text-slate-400 text-[10px] ml-4 font-normal';
-                                            } else {
-                                                className += isDark ? 'text-slate-300 ml-2' : 'text-slate-600 ml-2';
-                                            }
-                                            
-                                            return (
-                                                <div key={i} className={className}>
-                                                    {displayLog}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                    <BattleLogs logs={logs} theme={theme} logContainerRef={logContainerRef} />
                                 </div>
                             </>
                         )}
 
-                        {activeTab === 'montecarlo' && (
-                            <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col gap-4 min-h-[400px] lg:flex-1 lg:min-h-0 overflow-y-auto border border-slate-700/10">
-                                <button onClick={executeMonteCarlo} disabled={turn > 0} className="w-full frozen-btn-indigo font-bold py-3 rounded-lg transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
-                                    🚀 1000回シミュレーション実行
+                                <button 
+                                    onClick={executeMonteCarlo} 
+                                    disabled={turn > 0 || isSimulating} 
+                                    className="w-full frozen-btn-indigo font-bold py-3 rounded-lg transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                                >
+                                    {isSimulating ? `⏳ シミュレーション中... (${simProgress}%)` : '🚀 1000回シミュレーション実行'}
                                 </button>
                                 {turn > 0 && <p className="text-xs text-red-500 text-center font-bold">※実行するには、上の「戦闘リセット」ボタンで状態をリセットしてください。</p>}
 
@@ -613,5 +594,56 @@ const App = () => {
         </>
     );
 };
+
+const BattleLogs = React.memo(({ logs, theme, logContainerRef }) => {
+    return (
+        <div ref={logContainerRef} className="theme-log-container rounded-lg flex-1 overflow-y-auto max-h-[450px] lg:max-h-[750px] p-2.5 text-[11px] font-mono leading-relaxed whitespace-pre-wrap shadow-inner">
+            {logs.length === 0 && <p className="theme-text-muted text-center mt-4">ボタンを押して開始してください。</p>}
+            {logs.map((log, i) => {
+                const isHeader = log.includes('====');
+                const displayLog = isHeader ? log.replace(/====/g, '').trim() : log;
+                
+                const isDark = theme === 'dark';
+                let className = "mb-1 pl-1 ";
+                
+                if (isHeader) {
+                    className += isDark 
+                        ? 'text-cyan-400 mt-4 mb-2 font-bold border-b border-cyan-500/20 bg-cyan-950/15 px-2 py-1 rounded flex items-center'
+                        : 'text-sky-700 mt-4 mb-2 font-bold border-b border-sky-200 bg-sky-50/70 px-2 py-1 rounded flex items-center shadow-sm';
+                } else if (log.includes('▶ [味方')) {
+                    className += isDark 
+                        ? 'text-sky-300 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-950/10 rounded-r' 
+                        : 'text-sky-700 font-bold border-l-2 border-sky-500 pl-2 py-0.5 my-1 bg-sky-50/50 rounded-r';
+                } else if (log.includes('▶ [敵')) {
+                    className += isDark 
+                        ? 'text-rose-300 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-950/10 rounded-r' 
+                        : 'text-rose-700 font-bold border-l-2 border-rose-500 pl-2 py-0.5 my-1 bg-rose-50/50 rounded-r';
+                } else if (log.includes('✨') || log.includes('🛡️') || log.includes('🌀') || log.includes('⚡') || log.includes('🎲')) {
+                    className += isDark
+                        ? 'text-amber-300 font-bold bg-amber-950/20 px-2 py-0.5 rounded border border-amber-500/15 my-0.5 ml-2'
+                        : 'text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 my-0.5 ml-2';
+                } else if (log.includes('💥')) {
+                    className += isDark ? 'text-yellow-300 font-bold ml-3' : 'text-yellow-700 font-bold ml-3';
+                } else if (log.includes('空振り')) {
+                    className += isDark ? 'text-pink-400 font-bold bg-pink-950/10 px-1 rounded ml-2' : 'text-pink-700 font-bold bg-pink-50 px-1 rounded ml-2 border border-pink-100';
+                } else if (log.includes('★')) {
+                    className += isDark
+                        ? 'text-emerald-400 font-bold text-center bg-emerald-950/20 p-2 rounded-lg border border-emerald-500/20 my-3 text-xs shadow-sm'
+                        : 'text-emerald-700 font-bold text-center bg-emerald-50 p-2 rounded-lg border border-emerald-200 my-3 text-xs shadow-sm';
+                } else if (log.includes('┣') || log.includes('┃') || log.includes('┗') || log.includes('通常Mod:') || log.includes('追加Mod:') || log.includes('通常:') || log.includes('追加:')) {
+                    className += isDark ? 'text-slate-500 text-[10px] ml-4 font-normal' : 'text-slate-400 text-[10px] ml-4 font-normal';
+                } else {
+                    className += isDark ? 'text-slate-300 ml-2' : 'text-slate-600 ml-2';
+                }
+                
+                return (
+                    <div key={i} className={className}>
+                        {displayLog}
+                    </div>
+                );
+            })}
+        </div>
+    );
+});
 
 export default App;
