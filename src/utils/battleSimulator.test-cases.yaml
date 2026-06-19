@@ -160,3 +160,34 @@
   expected:
     kills_to_enemy: 2870
     kills_to_ally: 2519
+
+- name: "11. グレッグの確率バフ・デバフ発動検証 (弓兵攻撃時の与ダメバフおよび敵へのデバフ)"
+  ally:
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg" }
+    greg_active: true
+  enemy:
+    shield: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2053
+    kills_to_ally: 4894
+    skill_trigger_counts:
+      "greg_グレッグⅠ": 1
+      "greg_グレッグⅡ": 1
+
+- name: "12. グレッグ2体編成時の累積検証 (殺傷バフ+80%およびデバフ累積100%)"
+  ally:
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "greg", rider1: "greg" }
+    greg_active: true
+  enemy:
+    shield: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2640
+    kills_to_ally: 4894
+    skill_trigger_counts:
+      "greg_グレッグⅠ": 2
+      "greg_グレッグⅡ": 1
+
