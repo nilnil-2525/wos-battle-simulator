@@ -50,14 +50,15 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                         <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
                             📚 Skill List (重複カテゴリー)
                         </h2>
+                        <span className="text-[9px] lg:text-[10px] theme-nested-panel px-2 py-0.5 rounded font-normal">※同枠は【加算】、別枠は【乗算】</span>
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs">
                         <span className="theme-text-muted text-[10px]">並び替え:</span>
-                        <div className="flex theme-tab-container p-0.5 rounded text-[10px] shadow-inner">
-                            <button onClick={() => setSortBy('default')} className={`px-2 py-0.5 rounded transition ${sortBy === 'default' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>👤 英雄順</button>
-                            <button onClick={() => setSortBy('value')} className={`px-2 py-0.5 rounded transition ${sortBy === 'value' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>📊 効果値順</button>
-                            <button onClick={() => setSortBy('timing')} className={`px-2 py-0.5 rounded transition ${sortBy === 'timing' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>⏱️ 条件順</button>
+                        <div className="flex theme-tab-container p-0.5 rounded-full text-[10px] shadow-inner">
+                            <button onClick={() => setSortBy('default')} className={`px-2 py-0.5 rounded-full transition ${sortBy === 'default' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>👤 英雄順</button>
+                            <button onClick={() => setSortBy('value')} className={`px-2 py-0.5 rounded-full transition ${sortBy === 'value' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>📊 効果値順</button>
+                            <button onClick={() => setSortBy('timing')} className={`px-2 py-0.5 rounded-full transition ${sortBy === 'timing' ? 'theme-tab-btn-active font-bold' : 'theme-tab-btn-inactive'}`}>⏱️ 条件順</button>
                         </div>
                         <button onClick={onClose} className="text-2xl hover:opacity-75 leading-none transition px-2 ml-2">&times;</button>
                     </div>
