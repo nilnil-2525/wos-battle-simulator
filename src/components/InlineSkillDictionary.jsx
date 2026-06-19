@@ -50,6 +50,7 @@ export const InlineSkillDictionary = ({ heroDB, onClose }) => {
                         <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
                             📚 Skill List (重複カテゴリー)
                         </h2>
+                        <span className="text-[9px] lg:text-[10px] theme-nested-panel px-2 py-0.5 rounded font-normal">※同枠は【加算】、別枠は【乗算】</span>
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs">
