@@ -23,19 +23,19 @@
   --log-text-default: #4ade80;
   --log-text-sub: #166534;
   
-  --ally-panel-bg: rgba(8, 47, 73, 0.4); /* sky-950/40 */
-  --ally-panel-border: rgba(8, 145, 178, 0.5); /* sky-900/50 */
-  --ally-win-bg: rgba(8, 47, 73, 0.2); /* sky-950/20 */
-  --ally-win-border: rgba(8, 145, 178, 0.5);
-  --ally-win-text: #38bdf8; /* sky-400 */
-  --ally-win-text-sub: #7dd3fc; /* sky-300 */
+  --ally-panel-bg: rgba(59, 130, 246, 0.08); 
+  --ally-panel-border: rgba(59, 130, 246, 0.12); 
+  --ally-win-bg: rgba(59, 130, 246, 0.03); 
+  --ally-win-border: rgba(59, 130, 246, 0.15);
+  --ally-win-text: #60a5fa; 
+  --ally-win-text-sub: #93c5fd; 
 
-  --enemy-panel-bg: rgba(69, 10, 10, 0.4); /* red-950/40 */
-  --enemy-panel-border: rgba(185, 28, 28, 0.5); /* red-900/50 */
-  --enemy-win-bg: rgba(69, 10, 10, 0.2);
-  --enemy-win-border: rgba(185, 28, 28, 0.5);
-  --enemy-win-text: #f87171; /* red-400 */
-  --enemy-win-text-sub: #fca5a5; /* red-300 */
+  --enemy-panel-bg: rgba(239, 68, 68, 0.08); 
+  --enemy-panel-border: rgba(239, 68, 68, 0.12); 
+  --enemy-win-bg: rgba(239, 68, 68, 0.03);
+  --enemy-win-border: rgba(239, 68, 68, 0.15);
+  --enemy-win-text: #f87171; 
+  --enemy-win-text-sub: #fca5a5; 
 
   --snow-opacity: 0.25;
   --snow-fast-opacity: 0.15;
@@ -82,19 +82,19 @@
   --log-text-default: #334155; /* slate-700 */
   --log-text-sub: #64748b; /* slate-500 */
   
-  --ally-panel-bg: rgba(224, 242, 254, 0.5); /* sky-100/50 */
-  --ally-panel-border: rgba(56, 189, 248, 0.5); /* sky-400/50 */
-  --ally-win-bg: rgba(224, 242, 254, 0.3);
-  --ally-win-border: rgba(56, 189, 248, 0.5);
-  --ally-win-text: #0284c7; /* sky-600 */
-  --ally-win-text-sub: #0369a1; /* sky-700 */
+  --ally-panel-bg: rgba(59, 130, 246, 0.06); 
+  --ally-panel-border: rgba(59, 130, 246, 0.08); 
+  --ally-win-bg: rgba(59, 130, 246, 0.02);
+  --ally-win-border: rgba(59, 130, 246, 0.1);
+  --ally-win-text: #2563eb; 
+  --ally-win-text-sub: #1d4ed8; 
 
-  --enemy-panel-bg: rgba(254, 226, 226, 0.5); /* red-100/50 */
-  --enemy-panel-border: rgba(248, 113, 113, 0.5); /* red-400/50 */
-  --enemy-win-bg: rgba(254, 226, 226, 0.3);
-  --enemy-win-border: rgba(248, 113, 113, 0.5);
-  --enemy-win-text: #dc2626; /* red-600 */
-  --enemy-win-text-sub: #b91c1c; /* red-700 */
+  --enemy-panel-bg: rgba(239, 68, 68, 0.06); 
+  --enemy-panel-border: rgba(239, 68, 68, 0.08); 
+  --enemy-win-bg: rgba(239, 68, 68, 0.02);
+  --enemy-win-border: rgba(239, 68, 68, 0.1);
+  --enemy-win-text: #dc2626; 
+  --enemy-win-text-sub: #b91c1c; 
 
   --snow-opacity: 0.55;
   --snow-fast-opacity: 0.35;
@@ -185,13 +185,18 @@ body {
 }
 
 .ice-panel-ally {
-  border-left: 4px solid #0ea5e9; /* シアン/スカイブルー */
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.05);
+  border-left: 3px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.02);
 }
 
 .ice-panel-enemy {
-  border-left: 4px solid #ef4444; /* レッド */
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.05);
+  border-left: 3px solid rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.02);
+}
+
+.ice-panel-neutral {
+  border-left: 3px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 4px 20px rgba(148, 163, 184, 0.02);
 }
 
 /* 凍結したボタン */
@@ -282,8 +287,8 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 
 .theme-input:focus {
   outline: none;
-  border-color: #4ade80 !important;
-  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 [data-theme="light"] .theme-input {
@@ -291,8 +296,8 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 }
 
 [data-theme="light"] .theme-input:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
 .theme-log-container {

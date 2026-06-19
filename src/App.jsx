@@ -290,7 +290,7 @@ const App = () => {
                         title="味方" 
                         army={armyData.ally} 
                         bgColor="" 
-                        borderColor="border-sky-500" 
+                        borderColor="border-sky-500/30" 
                         titleColor="" 
                         turn={turn} 
                         onHeroChange={handleHeroChange} 
@@ -309,7 +309,7 @@ const App = () => {
                         title="敵" 
                         army={armyData.enemy} 
                         bgColor="" 
-                        borderColor="border-red-500" 
+                        borderColor="border-red-500/30" 
                         titleColor="" 
                         turn={turn} 
                         onHeroChange={handleHeroChange} 
@@ -347,7 +347,7 @@ const App = () => {
 
                         {activeTab === 'single' && (
                             <>
-                                <div className="ice-panel p-2.5 rounded-xl shadow-md shrink-0 border border-slate-700/10">
+                                <div className="ice-panel ice-panel-neutral p-2.5 rounded-xl shadow-md shrink-0 border border-slate-700/10">
                                     <div className="flex gap-2">
                                         <button onClick={() => executeBattle(true)} disabled={isGameOver} className="flex-1 frozen-btn-indigo font-bold py-2 rounded transition active:scale-95 text-xs flex items-center justify-center gap-1">
                                             ⏭️ 1ターン進める
@@ -358,7 +358,7 @@ const App = () => {
                                     </div>
                                 </div>
 
-                                <div className="ice-panel p-3 rounded-xl shadow-md shrink-0 border border-slate-700/10">
+                                <div className="ice-panel ice-panel-neutral p-3 rounded-xl shadow-md shrink-0 border border-slate-700/10">
                                     <h3 className="font-bold text-pink-500 mb-2.5 text-xs border-b border-slate-700/20 pb-1.5 flex items-center justify-between">
                                         <span className="flex items-center gap-1">🎲 スキル発動回数 <span className="text-[10px] font-normal theme-text-muted">(ターン {turn})</span></span>
                                     </h3>
@@ -494,7 +494,7 @@ const App = () => {
                                     </div>
                                 </div>
 
-                                <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col min-h-[400px] lg:flex-1 lg:min-h-0 border border-slate-700/10">
+                                <div className="ice-panel ice-panel-neutral p-3 rounded-xl shadow-md flex flex-col min-h-[400px] lg:flex-1 lg:min-h-0 border border-slate-700/10">
                                     <h3 className="font-bold mb-1.5 text-xs border-b border-slate-700/20 pb-1.5 shrink-0 flex items-center justify-between">
                                         <span>📋 詳細戦闘ログ</span>
                                         {logs.length > 0 && <span className="text-[10px] theme-text-muted font-mono">{logs.length} 件のログ</span>}
@@ -551,7 +551,7 @@ const App = () => {
                         )}
 
                         {activeTab === 'montecarlo' && (
-                            <div className="ice-panel p-3 rounded-xl shadow-md flex flex-col gap-4 min-h-[400px] lg:flex-1 lg:min-h-0 overflow-y-auto border border-slate-700/10">
+                            <div className="ice-panel ice-panel-neutral p-3 rounded-xl shadow-md flex flex-col gap-4 min-h-[400px] lg:flex-1 lg:min-h-0 overflow-y-auto border border-slate-700/10">
                                 <button onClick={executeMonteCarlo} disabled={turn > 0} className="w-full frozen-btn-indigo font-bold py-3 rounded-lg transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
                                     🚀 1000回シミュレーション実行
                                 </button>

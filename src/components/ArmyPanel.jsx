@@ -167,7 +167,7 @@ export const ArmyPanel = ({
     };
 
     return (
-        <div className={`flex-1 ice-panel ${side === 'ally' ? 'ice-panel-ally' : 'ice-panel-enemy'} p-3 rounded-xl border-t-4 ${borderColor}`}>
+        <div className={`flex-1 ice-panel ${side === 'ally' ? 'ice-panel-ally' : 'ice-panel-enemy'} p-3 rounded-xl border-t-2 ${borderColor}`}>
             <h2 className={`text-lg font-black ${side === 'ally' ? 'theme-ally-win-text' : 'theme-enemy-win-text'} mb-3 pb-1.5 border-b ${side === 'ally' ? 'border-sky-500/20' : 'border-red-500/20'} flex justify-between items-baseline`}>
                 <div className="flex items-baseline gap-2">
                     <span>{title}</span>
