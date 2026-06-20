@@ -137,28 +137,186 @@ export const recordHeroSkill = (army, skill, logger, isSilent, isInstant = false
     if (logger && !isSilent && isInstant) logger(`  ⚡ [即時スキル発動] ${skill.heroName}: ${skill.name}`);
 };
 
-export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTotalTroops, logger, currentTurn, isEvenAttack, atkSkillPool, isOverallHendrickAttacking = false, isSilent = false, resolvedMiaOppDefDown = 0) => {
-    const atkUnit = atkArmy[atkType];
-    const defUnit = defArmy[defType];
+/**
+ * ステップ1: 兵種の基礎値とバフ・防御側リーダー補正から実ステータスを算出する
+ * @param {string} atkType - 攻撃側の兵種 ('shield', 'spear', 'bow')
+ * @param {string} defType - 防御側の兵種 ('shield', 'spear', 'bow')
+ * @param {object} atkUnit - 攻撃側部隊の情報（tier, buffs 等）
+ * @param {object} defUnit - 防御側部隊の情報（tier, buffs 等）
+ * @param {string} leaderBow - 防御側の弓兵リーダー名
+ * @returns {object} 実ステータス { aAtk, aLet, dDef, dHp, hpDiv }
+ */
+export const calcActualStats = (atkType, defType, atkUnit, defUnit, leaderBow) => {
     const atkBase = baseStatsData[atkType][atkUnit.tier];
     const defBase = baseStatsData[defType][defUnit.tier];
 
+    // 防御側の弓兵リーダーがブラッドリー（bradley）の場合、特定の被攻撃部隊のHPを除算（弱体化）する補正
     let hpDiv = 1.0;
-    if (defArmy.heroes.leaderBow === 'bradley') {
+    if (leaderBow === 'bradley') {
         if (defType === 'shield') hpDiv = 1.25;
         if (defType === 'spear') hpDiv = 1.30;
     }
-    let t11BowPassiveAtkMult = (atkType === 'bow' && atkUnit.tier === 11) ? 1.06 : 1.0;
-    let t11ShieldPassiveDefMult = (defType === 'shield' && defUnit.tier === 11) ? 1.06 : 1.0;
 
+    // T11兵種特有の常時パッシブ補正 (弓攻撃1.06倍、盾防御1.06倍)
+    const t11BowPassiveAtkMult = (atkType === 'bow' && atkUnit.tier === 11) ? 1.06 : 1.0;
+    const t11ShieldPassiveDefMult = (defType === 'shield' && defUnit.tier === 11) ? 1.06 : 1.0;
+
+    // 実ステータスの算出 (基礎値 × (1 + バフ%/100))
     const aAtk = atkBase.attack * (1 + atkUnit.buffs.attack / 100) * t11BowPassiveAtkMult;
     const aLet = atkBase.lethality * (1 + atkUnit.buffs.lethality / 100);
     const dDef = defBase.defense * (1 + defUnit.buffs.defense / 100) * t11ShieldPassiveDefMult;
     const dHp = (defBase.hp * (1 + defUnit.buffs.hp / 100)) / hpDiv;
 
+    return { aAtk, aLet, dDef, dHp, hpDiv };
+};
+
+/**
+ * ステップ2 (前半): 攻撃力・殺傷力および防御力・HPの実ステータスから基本ダメージ係数 (baseDmg) を計算する
+ * @param {number} aAtk - 攻撃側実攻撃力
+ * @param {number} aLet - 攻撃側実殺傷力
+ * @param {number} dDef - 防御側実防御力
+ * @param {number} dHp - 防御側実HP
+ * @returns {number} baseDmg
+ */
+export const calcBaseDamage = (aAtk, aLet, dDef, dHp) => {
+    return (aAtk * aLet) / (Math.max(1, dDef) * Math.max(1, dHp)) / 100;
+};
+
+/**
+ * ステップ2 (後半): 基本ダメージ、相性、Mod、兵数平方根を乗算して撃破数の素値を算出する
+ * @param {number} baseDmg - 基本ダメージ係数
+ * @param {number} atkTroops - 攻撃側の現在兵数
+ * @param {number} minTotalTroops - 戦闘開始時の最小総兵数
+ * @param {number} multiplier - 兵種相性補正
+ * @param {number} skillMod - 通常または追加のスキルモディファイア
+ * @param {number} t7Reduc - T7以上盾兵による槍軽減補正
+ * @returns {number} 撃破数（素値）
+ */
+export const calcRawKills = (baseDmg, atkTroops, minTotalTroops, multiplier, skillMod, t7Reduc) => {
+    return baseDmg * Math.sqrt(atkTroops) * Math.sqrt(minTotalTroops) * multiplier * skillMod / t7Reduc;
+};
+
+/**
+ * ステップ3: スキルバフを集計し、通常・追加攻撃のモディファイア（Mod）を計算する
+ * @param {string} atkType - 攻撃側の兵種
+ * @param {string} defType - 防御側の兵種
+ * @param {array} myBuffs - 攻撃側のアクティブバフ一覧
+ * @param {array} enemyBuffs - 防御側のアクティブバフ一覧
+ * @param {number} miaOppDefDown - ミアⅠの被ダメージ上昇値
+ * @param {number} exDmgUp - 追加ダメージの基本倍率
+ * @returns {object} 通常・追加のスキルモディファイア、および各バフ集計値
+ */
+export const calcSkillModifiers = (atkType, defType, myBuffs, enemyBuffs, miaOppDefDown, exDmgUp) => {
+    // 与ダメバフ・敵防御デバフ等の集計 (DamageUp / OppDefenseDown)
+    const dmgUp1 = sumBuffCategory(myBuffs, 'DamageUp1', atkType, null, true);
+    const dmgUp2 = sumBuffCategory(myBuffs, 'DamageUp2', atkType, null, true);
+    const dmgUp3 = sumBuffCategory(myBuffs, 'DamageUp3', atkType, null, true);
+    const normalDmgUp = sumBuffCategory(myBuffs, 'NormalDamageUp', atkType, null, true);
+    const oppDefDown1 = sumBuffCategory(myBuffs, 'OppDefenseDown1', atkType, defType, false) + miaOppDefDown;
+    const oppDefDown2 = sumBuffCategory(myBuffs, 'OppDefenseDown2', atkType, defType, false);
+    
+    // 防御バフ・被ダメ低下デバフ等の集計 (DefenseUp / OppDamageDown)
+    const defUp1 = sumBuffCategory(enemyBuffs, 'DefenseUp1', defType, null, true);
+    const defUp2 = sumBuffCategory(enemyBuffs, 'DefenseUp2', defType, null, true);
+    const defUp3 = sumBuffCategory(enemyBuffs, 'DefenseUp3', defType, null, true);
+    const defUpS = sumBuffCategory(enemyBuffs, 'DefenseUpS', defType, null, true);
+    const oppDmgDown1 = sumBuffCategory(enemyBuffs, 'OppDamageDown1', atkType, defType, false);
+    const oppDmgDown2 = sumBuffCategory(enemyBuffs, 'OppDamageDown2', atkType, defType, false);
+
+    // 積算ルールに基づく通常攻撃Modの計算
+    const normalNumerator = (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + normalDmgUp) * (1 + oppDefDown1) * (1 + oppDefDown2);
+    const commonDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + defUp3) * (1 + defUpS);
+    const normalSkillMod = normalNumerator / commonDenominator;
+
+    // 追加攻撃時の置き換え処理 (防御側に「無名」がおり、被攻撃が盾兵かつ追加攻撃がある場合)
+    let exDefUp3 = defUp3;
+    if (enemyBuffs.some(b => b.heroName === '無名' && defType === 'shield') && exDmgUp > 0) {
+        exDefUp3 = defUp3 - 0.25 + 0.30;
+    }
+
+    // 追加攻撃Modの計算 (通常与ダメUPである NormalDamageUp は追加ダメージには乗らない)
+    const exDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + exDefUp3) * (1 + defUpS);
+    const exNumerator = exDmgUp * (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + oppDefDown1) * (1 + oppDefDown2);
+    const exSkillMod = exNumerator / exDenominator;
+
+    return {
+        normalSkillMod,
+        exSkillMod,
+        rawValues: { dmgUp1, dmgUp2, dmgUp3, normalDmgUp, oppDefDown1, oppDefDown2, defUp1, defUp2, defUp3, exDefUp3, defUpS, oppDmgDown1, oppDmgDown2 }
+    };
+};
+
+/**
+ * ステップ4: T11兵士の確率発動スキルを適用し、撃破数を四捨五入する
+ * @param {string} atkType - 攻撃側兵種
+ * @param {string} defType - 防御側兵種
+ * @param {object} atkUnit - 攻撃側部隊情報
+ * @param {object} defUnit - 防御側部隊情報
+ * @param {number} rawNormal - 通常撃破（素値）
+ * @param {number} rawExtra - 追加撃破（素値）
+ * @param {object} stats - 統計記録用オブジェクト（兵士スキルカウント加算用）
+ * @param {function} logger - ログ出力用関数
+ * @param {boolean} isSilent - ログ出力を抑制するか
+ * @param {boolean} isOverallHendrickAttacking - 全体ヘンドリック攻撃中か
+ * @returns {object} { finalNormalKills, finalExtraKills, totalKills, spearDmgMult, shieldReceiveDiv, spearReceiveDiv }
+ */
+export const applyT11ProbabilitySkills = (atkType, defType, atkUnit, defUnit, rawNormal, rawExtra, stats, logger, isSilent, isOverallHendrickAttacking) => {
+    // 槍兵攻撃時 15%確率で「炎晶戦矛」(通常・追加の与ダメ×2)
+    let t11SpearDmgMult = 1.0;
+    if (atkType === 'spear' && atkUnit.tier === 11 && !isOverallHendrickAttacking) {
+        if (Math.random() < 0.15) {
+            t11SpearDmgMult = 2.0;
+            stats.enshoCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【炎晶戦矛】発動！`);
+        }
+    }
+
+    // 盾兵被攻撃時 37.5%確率で「烈晶盾」(被ダメージ/1.51)
+    let t11ShieldReceiveDiv = 1.0;
+    if (defType === 'shield' && defUnit.tier === 11) {
+        if (Math.random() < 0.375) {
+            t11ShieldReceiveDiv = 1.51;
+            stats.resshoCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 盾兵【烈晶盾】発動！`);
+        }
+    }
+
+    // 槍兵被攻撃時 15%確率で「熾烈領域」(被ダメージ/2.0)
+    let t11SpearReceiveDiv = 1.0;
+    if (defType === 'spear' && defUnit.tier === 11) {
+        if (Math.random() < 0.15) {
+            t11SpearReceiveDiv = 2.0;
+            stats.shiretsuCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【熾烈領域】発動！`);
+        }
+    }
+
+    // T11のスキル補正を適用した撃破数を計算
+    const finalNormalKills = rawNormal * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
+    const finalExtraKills = rawExtra * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
+    const totalKills = Math.round(finalNormalKills + finalExtraKills);
+
+    return {
+        finalNormalKills,
+        finalExtraKills,
+        totalKills,
+        spearDmgMult: t11SpearDmgMult,
+        shieldReceiveDiv: t11ShieldReceiveDiv,
+        spearReceiveDiv: t11SpearReceiveDiv
+    };
+};
+
+export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTotalTroops, logger, currentTurn, isEvenAttack, atkSkillPool, isOverallHendrickAttacking = false, isSilent = false, resolvedMiaOppDefDown = 0) => {
+    const atkUnit = atkArmy[atkType];
+    const defUnit = defArmy[defType];
+
+    // ステップ1: 実ステータスの算出
+    const { aAtk, aLet, dDef, dHp, hpDiv } = calcActualStats(atkType, defType, atkUnit, defUnit, defArmy.heroes.leaderBow);
+
     const myBuffs = atkArmy.activeBuffs;
     const enemyBuffs = defArmy.activeBuffs;
 
+    // ミアの攻撃時確率追加ダメージ（ミアⅡ）等の判定
     let miaOppDefDown = resolvedMiaOppDefDown;
     let miaExtraDmg = 0;
     if (!isOverallHendrickAttacking) {
@@ -171,27 +329,12 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
         }
     }
 
-    const dmgUp1 = sumBuffCategory(myBuffs, 'DamageUp1', atkType, null, true);
-    const dmgUp2 = sumBuffCategory(myBuffs, 'DamageUp2', atkType, null, true);
-    const dmgUp3 = sumBuffCategory(myBuffs, 'DamageUp3', atkType, null, true);
-    const normalDmgUp = sumBuffCategory(myBuffs, 'NormalDamageUp', atkType, null, true);
-    const oppDefDown1 = sumBuffCategory(myBuffs, 'OppDefenseDown1', atkType, defType, false) + miaOppDefDown;
-    const oppDefDown2 = sumBuffCategory(myBuffs, 'OppDefenseDown2', atkType, defType, false);
-    const defUp1 = sumBuffCategory(enemyBuffs, 'DefenseUp1', defType, null, true);
-    const defUp2 = sumBuffCategory(enemyBuffs, 'DefenseUp2', defType, null, true);
-    let defUp3 = sumBuffCategory(enemyBuffs, 'DefenseUp3', defType, null, true);
-    const defUpS = sumBuffCategory(enemyBuffs, 'DefenseUpS', defType, null, true);
-    const oppDmgDown1 = sumBuffCategory(enemyBuffs, 'OppDamageDown1', atkType, defType, false);
-    const oppDmgDown2 = sumBuffCategory(enemyBuffs, 'OppDamageDown2', atkType, defType, false);
-
-    const normalNumerator = (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + normalDmgUp) * (1 + oppDefDown1) * (1 + oppDefDown2);
-    const commonDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + defUp3) * (1 + defUpS);
-    const normalSkillMod = normalNumerator / commonDenominator;
-
+    // スキル追加ダメージ（ソニヤやゴードン等の偶数回攻撃 / 周期攻撃）の集計
     let exDmgUp = sumBuffCategory(myBuffs, 'ExtraDamageUp', atkType, null, true) + miaExtraDmg;
     let instantLog = "";
     let hasStunApplied = false;
     
+    // T11弓兵の確率スキル（連射・燃晶火薬）の判定
     let t11BowExtraAtk = 0;
     let renshaActive = false;
     let nenshoActive = false;
@@ -210,6 +353,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
         }
     }
 
+    // 各英雄スキルの即時効果（ソニヤスタンや偶数回攻撃時の追加ダメージ加算）の集計
     atkSkillPool.forEach(skill => {
         if (atkType === 'spear' && isEvenAttack && skill.timing === 'spear_even_attack_instant') { 
             exDmgUp += skill.value;
@@ -227,67 +371,46 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
     if (isOverallHendrickAttacking) exDmgUp = 0.40;
     else exDmgUp += t11BowExtraAtk;
 
-    let exDefUp3 = defUp3;
-    if (enemyBuffs.some(b => b.heroName === '無名' && defType === 'shield') && exDmgUp > 0) exDefUp3 = defUp3 - 0.25 + 0.30;
+    // ステップ3: スキルモディファイア（通常Mod、追加Mod）の計算
+    const { normalSkillMod, exSkillMod, rawValues } = calcSkillModifiers(atkType, defType, myBuffs, enemyBuffs, miaOppDefDown, exDmgUp);
 
-    const exDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + exDefUp3) * (1 + defUpS);
-    const exNumerator = exDmgUp * (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + oppDefDown1) * (1 + oppDefDown2);
-    const exSkillMod = exNumerator / exDenominator;
-
+    // 有利相性マルチプライヤー (有利時 1.1倍)
     let multiplier = 1.0;
+    if ((atkType === 'shield' && defType === 'spear') || (atkType === 'spear' && defType === 'bow') || (atkType === 'bow' && defType === 'shield')) {
+        multiplier = 1.1;
+    }
+
+    // T7以上の盾兵に対する槍兵攻撃の特殊ダメージ減衰 (/1.1)
     let t7Reduc = 1.0;
-    if ((atkType === 'shield' && defType === 'spear') || (atkType === 'spear' && defType === 'bow') || (atkType === 'bow' && defType === 'shield')) multiplier = 1.1;
-    if (atkType === 'spear' && defType === 'shield' && defUnit.tier >= 7) t7Reduc = 1.1;
-
-    const baseDmg = (aAtk * aLet) / (Math.max(1, dDef) * Math.max(1, dHp)) / 100;
-    let rawNormal = isOverallHendrickAttacking ? 0 : (baseDmg * Math.sqrt(atkUnit.troops) * Math.sqrt(minTotalTroops) * multiplier * normalSkillMod / t7Reduc);
-    let rawExtra = exDmgUp > 0 ? (baseDmg * Math.sqrt(atkUnit.troops) * Math.sqrt(minTotalTroops) * multiplier * exSkillMod / t7Reduc) : 0;
-
-    let t11SpearDmgMult = 1.0;
-    if (atkType === 'spear' && atkUnit.tier === 11 && !isOverallHendrickAttacking) {
-        if (Math.random() < 0.15) {
-            t11SpearDmgMult = 2.0;
-            atkArmy.stats.enshoCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【炎晶戦矛】発動！`);
-        }
+    if (atkType === 'spear' && defType === 'shield' && defUnit.tier >= 7) {
+        t7Reduc = 1.1;
     }
 
-    let t11ShieldReceiveDiv = 1.0;
-    if (defType === 'shield' && defUnit.tier === 11) {
-        if (Math.random() < 0.375) {
-            t11ShieldReceiveDiv = 1.51;
-            defArmy.stats.resshoCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 盾兵【烈晶盾】発動！`);
-        }
-    }
+    // ステップ2: 基本ダメージと撃破数素値の計算
+    const baseDmg = calcBaseDamage(aAtk, aLet, dDef, dHp);
+    const rawNormal = isOverallHendrickAttacking ? 0 : calcRawKills(baseDmg, atkUnit.troops, minTotalTroops, multiplier, normalSkillMod, t7Reduc);
+    const rawExtra = exDmgUp > 0 ? calcRawKills(baseDmg, atkUnit.troops, minTotalTroops, multiplier, exSkillMod, t7Reduc) : 0;
 
-    let t11SpearReceiveDiv = 1.0;
-    if (defType === 'spear' && defUnit.tier === 11) {
-        if (Math.random() < 0.15) {
-            t11SpearReceiveDiv = 2.0;
-            defArmy.stats.shiretsuCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【熾烈領域】発動！`);
-        }
-    }
+    // ステップ4: T11確率スキルの適用と丸め処理
+    const { finalNormalKills, finalExtraKills, totalKills, spearDmgMult, shieldReceiveDiv, spearReceiveDiv } = 
+        applyT11ProbabilitySkills(atkType, defType, atkUnit, defUnit, rawNormal, rawExtra, atkArmy.stats, logger, isSilent, isOverallHendrickAttacking);
 
-    const finalNormalKills = rawNormal * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
-    const finalExtraKills = rawExtra * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
-    const totalKills = Math.round(finalNormalKills + finalExtraKills);
-
+    // T11弓兵の連射/燃晶火薬による撃破数を統計記録
     if (renshaActive) atkArmy.stats.renshaKills += Math.round(finalExtraKills * (1.00 / exDmgUp));
     if (nenshoActive) atkArmy.stats.nenshoKills += Math.round(finalExtraKills * (0.875 / exDmgUp));
 
+    // ログ出力処理
     let detailLog = "";
     if (!isSilent) {
         const formatMult = (...vals) => {
             const factors = vals.filter(v => v !== 0).map(v => (1 + v).toFixed(2));
             return factors.length > 0 ? factors.join(' × ') : '1.00';
         };
-        const dmgUpStr = formatMult(dmgUp1, dmgUp2, dmgUp3, normalDmgUp);
-        const oppDefDownStr = formatMult(oppDefDown1, oppDefDown2);
-        const oppDmgDownStr = formatMult(oppDmgDown1, oppDmgDown2);
-        const defUpStr = formatMult(defUp1, defUp2, defUp3, defUpS);
-        const exDefUpStr = formatMult(defUp1, defUp2, exDefUp3, defUpS);
+        const dmgUpStr = formatMult(rawValues.dmgUp1, rawValues.dmgUp2, rawValues.dmgUp3, rawValues.normalDmgUp);
+        const oppDefDownStr = formatMult(rawValues.oppDefDown1, rawValues.oppDefDown2);
+        const oppDmgDownStr = formatMult(rawValues.oppDmgDown1, rawValues.oppDmgDown2);
+        const defUpStr = formatMult(rawValues.defUp1, rawValues.defUp2, rawValues.defUp3, rawValues.defUpS);
+        const exDefUpStr = formatMult(rawValues.defUp1, rawValues.defUp2, rawValues.exDefUp3, rawValues.defUpS);
 
         detailLog += `  ┣ [計算内訳]:\n`;
         if (instantLog !== "") detailLog += `  ┃ ⚡即時追加: ${instantLog}\n`;
