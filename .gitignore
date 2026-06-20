@@ -17,3 +17,9 @@ Thumbs.db
 
 # Cloudflare local variables
 .dev.vars
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
