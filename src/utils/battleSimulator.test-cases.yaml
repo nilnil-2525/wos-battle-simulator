@@ -221,4 +221,83 @@
   expected:
     kills_to_enemy: 2794 # 通常(972) + 追加(1822) ※連射・燃晶火薬および敵盾兵の烈晶盾(/1.51)が発動した値
 
+- name: "16. ジェロニモのスキル検証 - 1ターン目の永続バフ（殺傷+25%、攻撃+25%）"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "jeronimo" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 1719
+
+- name: "16a. ジェロニモのスキル検証 - 4ターン目の周期バフ（与ダメ+30%）"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "jeronimo" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 7340
+    skill_trigger_counts:
+      "jeronimo_ジェロニモⅢ": 1
+
+- name: "17. エディスのスキル検証 - 永続バフ適用時の与撃破数と被撃破数"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "edith" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 1029
+    kills_to_ally: 880
+
+- name: "18. ゴードンのスキル2検証 - 3ターン目の槍与ダメ+20%および敵殺傷低下"
+  runTurn: 3
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "gordon" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 4684
+    kills_to_ally: 2919
+    skill_trigger_counts:
+      "gordon_ゴードンⅡ": 2
+
+- name: "18a. ゴードンのスキル3検証 - 4ターン目の敵盾被ダメ上昇"
+  runTurn: 4
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "gordon" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 6374
+    kills_to_ally: 3993
+    skill_trigger_counts:
+      "gordon_ゴードンⅢ": 2
+
+- name: "19. ブラッドリーのスキル3検証 - 4ターン目の部隊与ダメ+30%"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "bradley" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 7634
+    skill_trigger_counts:
+      "bradley_ブラッドリーⅢ": 1
+
+- name: "20. ヘンドリックのスキル2検証 - 4ターン目の部隊防御+30%による被ダメージ軽減"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "hendrick" }
+  expected:
+    kills_to_ally: 4252
+
 
