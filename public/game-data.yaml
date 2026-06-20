@@ -479,4 +479,11 @@ initialHeroDB:
           duration: 2
           value: 0.5
           name: "敵殺傷低下+"
+      "3":
+        -
+          category: "DefenseUp1"
+          target: "all"
+          timing: "always"
+          value: 0.25
+          name: "部隊HP+"
 

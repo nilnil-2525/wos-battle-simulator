@@ -71,6 +71,8 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
             let randomValue = 0.9;
             if (tc.ally?.kisyu_active || tc.ally?.mia_i_active || tc.ally?.greg_active) {
                 randomValue = 0.1;
+            } else if (tc.ally?.bow_skills_active) {
+                randomValue = 0.05; // 弓兵の連射(10%)、燃晶火薬(30%)を共に発動させる
             }
             vi.spyOn(Math, 'random').mockImplementation(() => randomValue);
 
@@ -81,10 +83,12 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
 
             // 3. 進行処理の実行
             // 特殊な発動ターンのある固有スキルに対応するため実行ターン数を決定
-            let runTurn = 1;
-            if (tc.ally?.sonya_active) runTurn = 6;
-            else if (tc.ally?.hendrick_active) runTurn = 3;
-            else if (tc.ally?.mia_i_active) runTurn = 2;
+            let runTurn = tc.runTurn || 1;
+            if (!tc.runTurn) {
+                if (tc.ally?.sonya_active) runTurn = 6;
+                else if (tc.ally?.hendrick_active) runTurn = 3;
+                else if (tc.ally?.mia_i_active) runTurn = 2;
+            }
             
             let battleState = currentArmyData;
             let fixedMinTroops = Math.min(

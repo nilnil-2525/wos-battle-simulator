@@ -96,15 +96,15 @@
       "mia_ミアⅡ": 2 # 1, 2ターン目に各1回、計2回発動
       "mia_ミアⅢ": 2 # 1, 2ターン目に各1回、計2回発動
 
-- name: "6. ブラッドリーの固有HP検証 - 敵弓リーダー時のHP補正"
+- name: "6. ブラッドリーの固有HP検証 - 味方弓リーダー編成時の敵HPデバフ補正"
   ally:
     shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "bradley" } # 味方弓リーダーにブラッドリーを編成 (敵槍HPが /1.30 される)
   enemy:
     spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
-    heroes: { leaderBow: "bradley" } # 敵弓リーダーにブラッドリーを編成 (敵槍HPが /1.30 される)
   expected:
-    # 通常の1100から、敵HP減少により撃破数が1430人に増えること
-    kills_to_enemy: 1430
+    # 通常の1100から、敵HP減少とブラッドリー攻撃バフ(+25%)により撃破数が1788人に増えること
+    kills_to_enemy: 1788
 
 - name: "7. ヘンドリックの固有スキル検証 - 3ターン目の全体追加狙撃"
   ally:
@@ -171,7 +171,7 @@
     bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
   expected:
     kills_to_enemy: 2053
-    kills_to_ally: 4894
+    kills_to_ally: 3915
     skill_trigger_counts:
       "greg_グレッグⅠ": 1
       "greg_グレッグⅡ": 1
@@ -186,8 +186,118 @@
     bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
   expected:
     kills_to_enemy: 2640
-    kills_to_ally: 4894
+    kills_to_ally: 3915
     skill_trigger_counts:
       "greg_グレッグⅠ": 2
       "greg_グレッグⅡ": 1
+
+- name: "13. 無名の追加ダメージ耐性検証"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "sonya" }
+    spearAttackCount: 1 # 偶数回攻撃時の追加ダメージ(ExtraDamageUp +0.75)を発生させる
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "mumei" } # 無名(mumei)が盾の被攻撃時にDefenseUp3を置き換える
+  expected:
+    kills_to_enemy: 1417 # 通常撃破(823) + 追加撃破(594) ※ソニヤⅠ/Ⅱのスキル効果と無名効果が適用された値
+
+- name: "14. 通常与ダメUP（レイナ）の追加ダメージ非適用検証"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "sonya", rider1: "reina" } # レイナの通常与ダメ+30%を付与
+    spearAttackCount: 1 # 偶数回攻撃時の追加ダメージ(ExtraDamageUp +0.75)を発生させる
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2110 # 通常撃破(1338) + 追加撃破(772) ※通常与ダメ+30%が追加ダメに適用されないことを保証した値
+
+- name: "15. T11弓兵の確率スキル（連射・燃晶火薬）の検証"
+  ally:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow_skills_active: true # 乱数モックを 0.05 にして連射・燃晶火薬を強制発動
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2794 # 通常(972) + 追加(1822) ※連射・燃晶火薬および敵盾兵の烈晶盾(/1.51)が発動した値
+
+- name: "16. ジェロニモのスキル検証 - 1ターン目の永続バフ（殺傷+25%、攻撃+25%）"
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "jeronimo" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 1719
+
+- name: "16a. ジェロニモのスキル検証 - 4ターン目の周期バフ（与ダメ+30%）"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "jeronimo" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 7340
+    skill_trigger_counts:
+      "jeronimo_ジェロニモⅢ": 1
+
+- name: "17. エディスのスキル検証 - 永続バフ適用時の与撃破数と被撃破数"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "edith" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 1029
+    kills_to_ally: 880
+
+- name: "18. ゴードンのスキル2検証 - 3ターン目の槍与ダメ+20%および敵殺傷低下"
+  runTurn: 3
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "gordon" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 4684
+    kills_to_ally: 2919
+    skill_trigger_counts:
+      "gordon_ゴードンⅡ": 2
+
+- name: "18a. ゴードンのスキル3検証 - 4ターン目の敵盾被ダメ上昇"
+  runTurn: 4
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "gordon" }
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 6881
+    kills_to_ally: 3993
+    skill_trigger_counts:
+      "gordon_ゴードンⅢ": 2
+
+- name: "19. ブラッドリーのスキル3検証 - 4ターン目の部隊与ダメ+30%"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "bradley" }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 7634
+    skill_trigger_counts:
+      "bradley_ブラッドリーⅢ": 1
+
+- name: "20. ヘンドリックのスキル2検証 - 4ターン目の部隊防御+30%による被ダメージ軽減"
+  runTurn: 4
+  ally:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  enemy:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "hendrick" }
+  expected:
+    kills_to_ally: 4252
+
 

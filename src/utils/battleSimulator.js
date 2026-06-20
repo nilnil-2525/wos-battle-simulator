@@ -1,6 +1,15 @@
 // Whiteout Survival (WOS) Battle Simulator - Core Calculation Logic
 // This file is React-independent and contains pure calculation functions.
 
+import {
+    handleHeroTurnStartSkills,
+    handleHeroPhaseStartDebuffs,
+    handleHeroPhaseStartBuffs,
+    handleHeroAttackExtraDamage,
+    handleHeroInstantAttackSkills,
+    handleHeroHendrickSnipe
+} from './heroSkills.js';
+
 export let baseStatsData = {};
 
 export const applyBattleGameData = (data) => {
@@ -115,12 +124,15 @@ export const sumBuffCategory = (buffs, targetCategory, unitType, enemyTargetType
         if (isMyBuff) {
             if (b.target === 'all' || b.target === unitType || b.target === 'self') match = true;
         } else {
-            if (b.target === 'all_enemy' || b.target === `enemy_${unitType}`) match = true;
+            if (b.target === 'all_enemy') match = true;
             if (targetCategory.startsWith('OppDefenseDown')) {
+                if (b.target === `enemy_${enemyTargetType}`) match = true;
                 if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === enemyTargetType) match = true;
-            }
-            if (targetCategory.startsWith('OppDamageDown')) {
-                if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
+            } else {
+                if (b.target === `enemy_${unitType}`) match = true;
+                if (targetCategory.startsWith('OppDamageDown')) {
+                    if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
+                }
             }
         }
         if (match) sum += b.value;
@@ -137,61 +149,195 @@ export const recordHeroSkill = (army, skill, logger, isSilent, isInstant = false
     if (logger && !isSilent && isInstant) logger(`  ⚡ [即時スキル発動] ${skill.heroName}: ${skill.name}`);
 };
 
-export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTotalTroops, logger, currentTurn, isEvenAttack, atkSkillPool, isOverallHendrickAttacking = false, isSilent = false, resolvedMiaOppDefDown = 0) => {
-    const atkUnit = atkArmy[atkType];
-    const defUnit = defArmy[defType];
+/**
+ * ステップ1: 兵種の基礎値とバフ・攻撃側リーダー補正から実ステータスを算出する
+ * @param {string} atkType - 攻撃側の兵種 ('shield', 'spear', 'bow')
+ * @param {string} defType - 防御側の兵種 ('shield', 'spear', 'bow')
+ * @param {object} atkUnit - 攻撃側部隊の情報（tier, buffs 等）
+ * @param {object} defUnit - 防御側部隊の情報（tier, buffs 等）
+ * @param {string} atkLeaderBow - 攻撃側の弓兵リーダー名
+ * @returns {object} 実ステータス { aAtk, aLet, dDef, dHp, hpDiv }
+ */
+export const calcActualStats = (atkType, defType, atkUnit, defUnit, atkLeaderBow) => {
     const atkBase = baseStatsData[atkType][atkUnit.tier];
     const defBase = baseStatsData[defType][defUnit.tier];
 
+    // 攻撃側の弓兵リーダーがブラッドリー（bradley）の場合、防御側部隊のHPを除算（弱体化）する補正
     let hpDiv = 1.0;
-    if (defArmy.heroes.leaderBow === 'bradley') {
+    if (atkLeaderBow === 'bradley') {
         if (defType === 'shield') hpDiv = 1.25;
         if (defType === 'spear') hpDiv = 1.30;
     }
-    let t11BowPassiveAtkMult = (atkType === 'bow' && atkUnit.tier === 11) ? 1.06 : 1.0;
-    let t11ShieldPassiveDefMult = (defType === 'shield' && defUnit.tier === 11) ? 1.06 : 1.0;
 
+    // T11兵種特有 of 常時パッシブ補正 (弓攻撃1.06倍、盾防御1.06倍)
+    const t11BowPassiveAtkMult = (atkType === 'bow' && atkUnit.tier === 11) ? 1.06 : 1.0;
+    const t11ShieldPassiveDefMult = (defType === 'shield' && defUnit.tier === 11) ? 1.06 : 1.0;
+
+    // 実ステータスの算出 (基礎値 × (1 + バフ%/100))
     const aAtk = atkBase.attack * (1 + atkUnit.buffs.attack / 100) * t11BowPassiveAtkMult;
     const aLet = atkBase.lethality * (1 + atkUnit.buffs.lethality / 100);
     const dDef = defBase.defense * (1 + defUnit.buffs.defense / 100) * t11ShieldPassiveDefMult;
     const dHp = (defBase.hp * (1 + defUnit.buffs.hp / 100)) / hpDiv;
 
-    const myBuffs = atkArmy.activeBuffs;
-    const enemyBuffs = defArmy.activeBuffs;
+    return { aAtk, aLet, dDef, dHp, hpDiv };
+};
 
-    let miaOppDefDown = resolvedMiaOppDefDown;
-    let miaExtraDmg = 0;
-    if (!isOverallHendrickAttacking) {
-        const miaSkill2s = atkSkillPool.filter(s => s.timing === 'mia_atk_prob_50_ex');
-        if (miaSkill2s.length > 0 && Math.random() < 0.50) {
-            miaSkill2s.forEach(s => {
-                miaExtraDmg += s.value;
-                recordHeroSkill(atkArmy, s, logger, isSilent, true);
-            });
-        }
-    }
+/**
+ * ステップ2 (前半): 攻撃力・殺傷力および防御力・HPの実ステータスから基本ダメージ係数 (baseDmg) を計算する
+ * @param {number} aAtk - 攻撃側実攻撃力
+ * @param {number} aLet - 攻撃側実殺傷力
+ * @param {number} dDef - 防御側実防御力
+ * @param {number} dHp - 防御側実HP
+ * @returns {number} baseDmg
+ */
+export const calcBaseDamage = (aAtk, aLet, dDef, dHp) => {
+    return (aAtk * aLet) / (Math.max(1, dDef) * Math.max(1, dHp)) / 100;
+};
 
+/**
+ * ステップ2 (後半): 基本ダメージ、相性、Mod、兵数平方根を乗算して撃破数の素値を算出する
+ * @param {number} baseDmg - 基本ダメージ係数
+ * @param {number} atkTroops - 攻撃側の現在兵数
+ * @param {number} minTotalTroops - 戦闘開始時の最小総兵数
+ * @param {number} multiplier - 兵種相性補正
+ * @param {number} skillMod - 通常または追加のスキルモディファイア
+ * @param {number} t7Reduc - T7以上盾兵による槍軽減補正
+ * @returns {number} 撃破数（素値）
+ */
+export const calcRawKills = (baseDmg, atkTroops, minTotalTroops, multiplier, skillMod, t7Reduc) => {
+    return baseDmg * Math.sqrt(atkTroops) * Math.sqrt(minTotalTroops) * multiplier * skillMod / t7Reduc;
+};
+
+/**
+ * ステップ3: スキルバフを集計し、通常・追加攻撃のモディファイア（Mod）を計算する
+ * @param {string} atkType - 攻撃側の兵種
+ * @param {string} defType - 防御側の兵種
+ * @param {array} myBuffs - 攻撃側のアクティブバフ一覧
+ * @param {array} enemyBuffs - 防御側のアクティブバフ一覧
+ * @param {number} miaOppDefDown - ミアⅠの被ダメージ上昇値
+ * @param {number} exDmgUp - 追加ダメージの基本倍率
+ * @returns {object} 通常・追加のスキルモディファイア、および各バフ集計値
+ */
+export const calcSkillModifiers = (atkType, defType, myBuffs, enemyBuffs, miaOppDefDown, exDmgUp) => {
+    // 与ダメバフ・敵防御デバフ等の集計 (DamageUp / OppDefenseDown)
     const dmgUp1 = sumBuffCategory(myBuffs, 'DamageUp1', atkType, null, true);
     const dmgUp2 = sumBuffCategory(myBuffs, 'DamageUp2', atkType, null, true);
     const dmgUp3 = sumBuffCategory(myBuffs, 'DamageUp3', atkType, null, true);
     const normalDmgUp = sumBuffCategory(myBuffs, 'NormalDamageUp', atkType, null, true);
     const oppDefDown1 = sumBuffCategory(myBuffs, 'OppDefenseDown1', atkType, defType, false) + miaOppDefDown;
     const oppDefDown2 = sumBuffCategory(myBuffs, 'OppDefenseDown2', atkType, defType, false);
+    
+    // 防御バフ・被ダメ低下デバフ等の集計 (DefenseUp / OppDamageDown)
     const defUp1 = sumBuffCategory(enemyBuffs, 'DefenseUp1', defType, null, true);
     const defUp2 = sumBuffCategory(enemyBuffs, 'DefenseUp2', defType, null, true);
-    let defUp3 = sumBuffCategory(enemyBuffs, 'DefenseUp3', defType, null, true);
+    const defUp3 = sumBuffCategory(enemyBuffs, 'DefenseUp3', defType, null, true);
     const defUpS = sumBuffCategory(enemyBuffs, 'DefenseUpS', defType, null, true);
     const oppDmgDown1 = sumBuffCategory(enemyBuffs, 'OppDamageDown1', atkType, defType, false);
     const oppDmgDown2 = sumBuffCategory(enemyBuffs, 'OppDamageDown2', atkType, defType, false);
 
+    // 積算ルールに基づく通常攻撃Modの計算
     const normalNumerator = (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + normalDmgUp) * (1 + oppDefDown1) * (1 + oppDefDown2);
     const commonDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + defUp3) * (1 + defUpS);
     const normalSkillMod = normalNumerator / commonDenominator;
 
+    // 追加攻撃時の置き換え処理 (防御側に「無名」がおり、被攻撃が盾兵かつ追加攻撃がある場合)
+    let exDefUp3 = defUp3;
+    if (enemyBuffs.some(b => b.heroName === '無名' && defType === 'shield') && exDmgUp > 0) {
+        exDefUp3 = defUp3 - 0.25 + 0.30;
+    }
+
+    // 追加攻撃Modの計算 (通常与ダメUPである NormalDamageUp は追加ダメージには乗らない)
+    const exDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + exDefUp3) * (1 + defUpS);
+    const exNumerator = exDmgUp * (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + oppDefDown1) * (1 + oppDefDown2);
+    const exSkillMod = exNumerator / exDenominator;
+
+    return {
+        normalSkillMod,
+        exSkillMod,
+        rawValues: { dmgUp1, dmgUp2, dmgUp3, normalDmgUp, oppDefDown1, oppDefDown2, defUp1, defUp2, defUp3, exDefUp3, defUpS, oppDmgDown1, oppDmgDown2 }
+    };
+};
+
+/**
+ * ステップ4: T11兵士の確率発動スキルを適用し、撃破数を四捨五入する
+ * @param {string} atkType - 攻撃側兵種
+ * @param {string} defType - 防御側兵種
+ * @param {object} atkUnit - 攻撃側部隊情報
+ * @param {object} defUnit - 防御側部隊情報
+ * @param {number} rawNormal - 通常撃破（素値）
+ * @param {number} rawExtra - 追加撃破（素値）
+ * @param {object} stats - 統計記録用オブジェクト（兵士スキルカウント加算用）
+ * @param {function} logger - ログ出力用関数
+ * @param {boolean} isSilent - ログ出力を抑制するか
+ * @param {boolean} isOverallHendrickAttacking - 全体ヘンドリック攻撃中か
+ * @returns {object} { finalNormalKills, finalExtraKills, totalKills, spearDmgMult, shieldReceiveDiv, spearReceiveDiv }
+ */
+export const applyT11ProbabilitySkills = (atkType, defType, atkUnit, defUnit, rawNormal, rawExtra, stats, logger, isSilent, isOverallHendrickAttacking) => {
+    // 槍兵攻撃時 15%確率で「炎晶戦矛」(通常・追加の与ダメ×2)
+    let t11SpearDmgMult = 1.0;
+    if (atkType === 'spear' && atkUnit.tier === 11 && !isOverallHendrickAttacking) {
+        if (Math.random() < 0.15) {
+            t11SpearDmgMult = 2.0;
+            stats.enshoCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【炎晶戦矛】発動！`);
+        }
+    }
+
+    // 盾兵被攻撃時 37.5%確率で「烈晶盾」(被ダメージ/1.51)
+    let t11ShieldReceiveDiv = 1.0;
+    if (defType === 'shield' && defUnit.tier === 11) {
+        if (Math.random() < 0.375) {
+            t11ShieldReceiveDiv = 1.51;
+            stats.resshoCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 盾兵【烈晶盾】発動！`);
+        }
+    }
+
+    // 槍兵被攻撃時 15%確率で「熾烈領域」(被ダメージ/2.0)
+    let t11SpearReceiveDiv = 1.0;
+    if (defType === 'spear' && defUnit.tier === 11) {
+        if (Math.random() < 0.15) {
+            t11SpearReceiveDiv = 2.0;
+            stats.shiretsuCount++;
+            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【熾烈領域】発動！`);
+        }
+    }
+
+    // T11のスキル補正を適用した撃破数を計算
+    const finalNormalKills = rawNormal * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
+    const finalExtraKills = rawExtra * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
+    const totalKills = Math.round(finalNormalKills + finalExtraKills);
+
+    return {
+        finalNormalKills,
+        finalExtraKills,
+        totalKills,
+        spearDmgMult: t11SpearDmgMult,
+        shieldReceiveDiv: t11ShieldReceiveDiv,
+        spearReceiveDiv: t11SpearReceiveDiv
+    };
+};
+
+export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTotalTroops, logger, currentTurn, isEvenAttack, atkSkillPool, isOverallHendrickAttacking = false, isSilent = false, resolvedMiaOppDefDown = 0) => {
+    const atkUnit = atkArmy[atkType];
+    const defUnit = defArmy[defType];
+
+    // ステップ1: 実ステータスの算出
+    const { aAtk, aLet, dDef, dHp, hpDiv } = calcActualStats(atkType, defType, atkUnit, defUnit, atkArmy.heroes.leaderBow);
+
+    const myBuffs = atkArmy.activeBuffs;
+    const enemyBuffs = defArmy.activeBuffs;
+
+    // ミアの攻撃時確率追加ダメージ（ミアⅡ）等の判定
+    let miaOppDefDown = resolvedMiaOppDefDown;
+    const miaExtraDmg = handleHeroAttackExtraDamage(isOverallHendrickAttacking, atkSkillPool, atkArmy, recordHeroSkill, logger, isSilent);
+
+    // スキル追加ダメージ（ソニヤやゴードン等の偶数回攻撃 / 周期攻撃）の集計
     let exDmgUp = sumBuffCategory(myBuffs, 'ExtraDamageUp', atkType, null, true) + miaExtraDmg;
     let instantLog = "";
     let hasStunApplied = false;
     
+    // T11弓兵の確率スキル（連射・燃晶火薬）の判定
     let t11BowExtraAtk = 0;
     let renshaActive = false;
     let nenshoActive = false;
@@ -210,84 +356,66 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
         }
     }
 
-    atkSkillPool.forEach(skill => {
-        if (atkType === 'spear' && isEvenAttack && skill.timing === 'spear_even_attack_instant') { 
-            exDmgUp += skill.value;
-            instantLog += `[${skill.heroName}+${(skill.value*100).toFixed(1)}%] `; 
-            recordHeroSkill(atkArmy, skill, logger, isSilent, false);
-        }
-        if (atkType === 'spear' && (currentTurn - (atkArmy.stunTurnOffset||0)) % 5 === 0 && (currentTurn - (atkArmy.stunTurnOffset||0)) > 0 && skill.timing === 'turn_5n_instant') { 
-            exDmgUp += skill.value;
-            instantLog += `[${skill.heroName}Ⅲ+${(skill.value*100).toFixed(1)}%] `; 
-            hasStunApplied = true; 
-            recordHeroSkill(atkArmy, skill, logger, isSilent, false);
-        }
-    });
+    // 各英雄スキルの即時効果（ソニヤスタンや偶数回攻撃時の追加ダメージ加算）の集計
+    const instantResult = handleHeroInstantAttackSkills(
+        atkType,
+        currentTurn,
+        isEvenAttack,
+        atkSkillPool,
+        atkArmy,
+        recordHeroSkill,
+        logger,
+        isSilent
+    );
+    exDmgUp += instantResult.exDmgUp;
+    instantLog += instantResult.instantLog;
+    if (instantResult.hasStunApplied) {
+        hasStunApplied = true;
+    }
 
     if (isOverallHendrickAttacking) exDmgUp = 0.40;
     else exDmgUp += t11BowExtraAtk;
 
-    let exDefUp3 = defUp3;
-    if (enemyBuffs.some(b => b.heroName === '無名' && defType === 'shield') && exDmgUp > 0) exDefUp3 = defUp3 - 0.25 + 0.30;
+    // ステップ3: スキルモディファイア（通常Mod、追加Mod）の計算
+    const { normalSkillMod, exSkillMod, rawValues } = calcSkillModifiers(atkType, defType, myBuffs, enemyBuffs, miaOppDefDown, exDmgUp);
 
-    const exDenominator = (1 + oppDmgDown1) * (1 + oppDmgDown2) * (1 + defUp1) * (1 + defUp2) * (1 + exDefUp3) * (1 + defUpS);
-    const exNumerator = exDmgUp * (1 + dmgUp1) * (1 + dmgUp2) * (1 + dmgUp3) * (1 + oppDefDown1) * (1 + oppDefDown2);
-    const exSkillMod = exNumerator / exDenominator;
-
+    // 有利相性マルチプライヤー (有利時 1.1倍)
     let multiplier = 1.0;
+    if ((atkType === 'shield' && defType === 'spear') || (atkType === 'spear' && defType === 'bow') || (atkType === 'bow' && defType === 'shield')) {
+        multiplier = 1.1;
+    }
+
+    // T7以上の盾兵に対する槍兵攻撃の特殊ダメージ減衰 (/1.1)
     let t7Reduc = 1.0;
-    if ((atkType === 'shield' && defType === 'spear') || (atkType === 'spear' && defType === 'bow') || (atkType === 'bow' && defType === 'shield')) multiplier = 1.1;
-    if (atkType === 'spear' && defType === 'shield' && defUnit.tier >= 7) t7Reduc = 1.1;
-
-    const baseDmg = (aAtk * aLet) / (Math.max(1, dDef) * Math.max(1, dHp)) / 100;
-    let rawNormal = isOverallHendrickAttacking ? 0 : (baseDmg * Math.sqrt(atkUnit.troops) * Math.sqrt(minTotalTroops) * multiplier * normalSkillMod / t7Reduc);
-    let rawExtra = exDmgUp > 0 ? (baseDmg * Math.sqrt(atkUnit.troops) * Math.sqrt(minTotalTroops) * multiplier * exSkillMod / t7Reduc) : 0;
-
-    let t11SpearDmgMult = 1.0;
-    if (atkType === 'spear' && atkUnit.tier === 11 && !isOverallHendrickAttacking) {
-        if (Math.random() < 0.15) {
-            t11SpearDmgMult = 2.0;
-            atkArmy.stats.enshoCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【炎晶戦矛】発動！`);
-        }
+    if (atkType === 'spear' && defType === 'shield' && defUnit.tier >= 7) {
+        t7Reduc = 1.1;
     }
 
-    let t11ShieldReceiveDiv = 1.0;
-    if (defType === 'shield' && defUnit.tier === 11) {
-        if (Math.random() < 0.375) {
-            t11ShieldReceiveDiv = 1.51;
-            defArmy.stats.resshoCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 盾兵【烈晶盾】発動！`);
-        }
-    }
+    // ステップ2: 基本ダメージと撃破数素値の計算
+    const baseDmg = calcBaseDamage(aAtk, aLet, dDef, dHp);
+    const rawNormal = isOverallHendrickAttacking ? 0 : calcRawKills(baseDmg, atkUnit.troops, minTotalTroops, multiplier, normalSkillMod, t7Reduc);
+    const rawExtra = exDmgUp > 0 ? calcRawKills(baseDmg, atkUnit.troops, minTotalTroops, multiplier, exSkillMod, t7Reduc) : 0;
 
-    let t11SpearReceiveDiv = 1.0;
-    if (defType === 'spear' && defUnit.tier === 11) {
-        if (Math.random() < 0.15) {
-            t11SpearReceiveDiv = 2.0;
-            defArmy.stats.shiretsuCount++;
-            if (logger && !isSilent) logger(`🎲 [兵士スキル] 槍兵【熾烈領域】発動！`);
-        }
-    }
+    // ステップ4: T11確率スキルの適用と丸め処理
+    const { finalNormalKills, finalExtraKills, totalKills, spearDmgMult: t11SpearDmgMult, shieldReceiveDiv: t11ShieldReceiveDiv, spearReceiveDiv: t11SpearReceiveDiv } = 
+        applyT11ProbabilitySkills(atkType, defType, atkUnit, defUnit, rawNormal, rawExtra, atkArmy.stats, logger, isSilent, isOverallHendrickAttacking);
 
-    const finalNormalKills = rawNormal * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
-    const finalExtraKills = rawExtra * t11SpearDmgMult / (t11ShieldReceiveDiv * t11SpearReceiveDiv);
-    const totalKills = Math.round(finalNormalKills + finalExtraKills);
-
+    // T11弓兵の連射/燃晶火薬による撃破数を統計記録
     if (renshaActive) atkArmy.stats.renshaKills += Math.round(finalExtraKills * (1.00 / exDmgUp));
     if (nenshoActive) atkArmy.stats.nenshoKills += Math.round(finalExtraKills * (0.875 / exDmgUp));
 
+    // ログ出力処理
     let detailLog = "";
     if (!isSilent) {
         const formatMult = (...vals) => {
             const factors = vals.filter(v => v !== 0).map(v => (1 + v).toFixed(2));
             return factors.length > 0 ? factors.join(' × ') : '1.00';
         };
-        const dmgUpStr = formatMult(dmgUp1, dmgUp2, dmgUp3, normalDmgUp);
-        const oppDefDownStr = formatMult(oppDefDown1, oppDefDown2);
-        const oppDmgDownStr = formatMult(oppDmgDown1, oppDmgDown2);
-        const defUpStr = formatMult(defUp1, defUp2, defUp3, defUpS);
-        const exDefUpStr = formatMult(defUp1, defUp2, exDefUp3, defUpS);
+        const dmgUpStr = formatMult(rawValues.dmgUp1, rawValues.dmgUp2, rawValues.dmgUp3, rawValues.normalDmgUp);
+        const oppDefDownStr = formatMult(rawValues.oppDefDown1, rawValues.oppDefDown2);
+        const oppDmgDownStr = formatMult(rawValues.oppDmgDown1, rawValues.oppDmgDown2);
+        const defUpStr = formatMult(rawValues.defUp1, rawValues.defUp2, rawValues.defUp3, rawValues.defUpS);
+        const exDefUpStr = formatMult(rawValues.defUp1, rawValues.defUp2, rawValues.exDefUp3, rawValues.defUpS);
 
         detailLog += `  ┣ [計算内訳]:\n`;
         if (instantLog !== "") detailLog += `  ┃ ⚡即時追加: ${instantLog}\n`;
@@ -295,7 +423,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
             detailLog += `  ┃ [通常Mod]: (${dmgUpStr} [与ダバフ] × ${oppDefDownStr} [被ダ増]) / (${oppDmgDownStr} [攻撃低下] × ${defUpStr} [被ダ低下]) = ${normalSkillMod.toFixed(3)}\n`;
         }
         if (exDmgUp > 0) {
-            const exDmgUpStr = formatMult(dmgUp1, dmgUp2, dmgUp3);
+            const exDmgUpStr = formatMult(rawValues.dmgUp1, rawValues.dmgUp2, rawValues.dmgUp3);
             detailLog += `  ┃ [追加Mod]: (${exDmgUp.toFixed(2)} [追加倍率] × ${exDmgUpStr} [通常乗算] × ${oppDefDownStr} [被ダ増]) / (${oppDmgDownStr} [攻撃低下] × ${exDefUpStr} [被ダ低下+無名]) = ${exSkillMod.toFixed(3)}\n`;
         }
 
@@ -345,46 +473,8 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         enemySkillPool.filter(s => s.timing === 'always').forEach(s => enemy.activeBuffs.push({ ...s, remain: 999 }));
     }
 
-    const allyMiaSkill3s = allySkillPool.filter(s => s.timing === 'mia_turn_prob_40');
-    if (allyMiaSkill3s.length > 0 && Math.random() < 0.40) {
-        allyMiaSkill3s.forEach(s => {
-            ally.activeBuffs.push({ ...s, remain: 1 });
-            recordHeroSkill(ally, s, logger, isSilent, true);
-        });
-    }
-    const enemyMiaSkill3s = enemySkillPool.filter(s => s.timing === 'mia_turn_prob_40');
-    if (enemyMiaSkill3s.length > 0 && Math.random() < 0.40) {
-        enemyMiaSkill3s.forEach(s => {
-            enemy.activeBuffs.push({ ...s, remain: 1 });
-            recordHeroSkill(enemy, s, logger, isSilent, true);
-        });
-    }
-
-    // グレッグ：ターン開始時スキル1（殺傷+ 40%, 3T, 確率20%）
-    const allyGregSkill1s = allySkillPool.filter(s => s.timing === 'greg_turn_prob_20');
-    if (allyGregSkill1s.length > 0 && Math.random() < 0.20) {
-        ally.activeBuffs = ally.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_turn_prob_20'));
-        const totalValue = allyGregSkill1s.reduce((sum, s) => sum + s.value, 0);
-        const baseSkill = allyGregSkill1s[0];
-        ally.activeBuffs.push({
-            ...baseSkill,
-            value: totalValue,
-            remain: baseSkill.duration
-        });
-        allyGregSkill1s.forEach(s => recordHeroSkill(ally, s, logger, isSilent, true));
-    }
-    const enemyGregSkill1s = enemySkillPool.filter(s => s.timing === 'greg_turn_prob_20');
-    if (enemyGregSkill1s.length > 0 && Math.random() < 0.20) {
-        enemy.activeBuffs = enemy.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_turn_prob_20'));
-        const totalValue = enemyGregSkill1s.reduce((sum, s) => sum + s.value, 0);
-        const baseSkill = enemyGregSkill1s[0];
-        enemy.activeBuffs.push({
-            ...baseSkill,
-            value: totalValue,
-            remain: baseSkill.duration
-        });
-        enemyGregSkill1s.forEach(s => recordHeroSkill(enemy, s, logger, isSilent, true));
-    }
+    handleHeroTurnStartSkills(ally, allySkillPool, recordHeroSkill, logger, isSilent);
+    handleHeroTurnStartSkills(enemy, enemySkillPool, recordHeroSkill, logger, isSilent);
 
     if (ally.spear.troops > 0 && ally.spear.tier === 11) {
         if (enemy.bow.troops > 0 && Math.random() < 0.20) { 
@@ -451,67 +541,11 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         let killsToEnemy = 0, killsToAlly = 0;
         let applyAllyStunToEnemy = false, applyEnemyStunToAlly = false;
 
-        let allyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2 && atkTypeAlly) {
-            const miaSkill1s = allySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
-            if (miaSkill1s.length > 0 && Math.random() < 0.50) {
-                miaSkill1s.forEach(s => {
-                    allyResolvedMiaOppDefDown += s.value;
-                    recordHeroSkill(ally, s, logger, isSilent, true);
-                });
-            }
-        }
-        let enemyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2 && atkTypeEnemy) {
-            const miaSkill1sE = enemySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
-            if (miaSkill1sE.length > 0 && Math.random() < 0.50) {
-                miaSkill1sE.forEach(s => {
-                    enemyResolvedMiaOppDefDown += s.value;
-                    recordHeroSkill(enemy, s, logger, isSilent, true);
-                });
-            }
-        }
+        const allyResolvedMiaOppDefDown = handleHeroPhaseStartDebuffs(currentTurn, atkTypeAlly, allySkillPool, ally, recordHeroSkill, logger, isSilent);
+        const enemyResolvedMiaOppDefDown = handleHeroPhaseStartDebuffs(currentTurn, atkTypeEnemy, enemySkillPool, enemy, recordHeroSkill, logger, isSilent);
 
-        // グレッグ：味方攻撃フェーズ開始時スキル2（敵殺傷低下+ 50%, 2T, 確率20%）
-        if (atkTypeAlly && enemy[atkTypeAlly] && enemy[atkTypeAlly].troops > 0) {
-            const gregSkill2s = allySkillPool.filter(s => s.timing === 'greg_phase_prob_20');
-            if (gregSkill2s.length > 0 && Math.random() < 0.20) {
-                ally.activeBuffs = ally.activeBuffs.filter(b => !(
-                    b.heroKey === 'greg' && 
-                    b.timing === 'greg_phase_prob_20' && 
-                    b.target === `enemy_${atkTypeAlly}`
-                ));
-                const totalValue = gregSkill2s.reduce((sum, s) => sum + s.value, 0);
-                const baseSkill = gregSkill2s[0];
-                ally.activeBuffs.push({
-                    ...baseSkill,
-                    target: `enemy_${atkTypeAlly}`,
-                    value: totalValue,
-                    remain: baseSkill.duration
-                });
-                gregSkill2s.forEach(s => recordHeroSkill(ally, s, logger, isSilent, true));
-            }
-        }
-        // グレッグ：敵攻撃フェーズ開始時スキル2（味方殺傷低下+ 50%, 2T, 確率20%）
-        if (atkTypeEnemy && ally[atkTypeEnemy] && ally[atkTypeEnemy].troops > 0) {
-            const gregSkill2s = enemySkillPool.filter(s => s.timing === 'greg_phase_prob_20');
-            if (gregSkill2s.length > 0 && Math.random() < 0.20) {
-                enemy.activeBuffs = enemy.activeBuffs.filter(b => !(
-                    b.heroKey === 'greg' && 
-                    b.timing === 'greg_phase_prob_20' && 
-                    b.target === `enemy_${atkTypeEnemy}`
-                ));
-                const totalValue = gregSkill2s.reduce((sum, s) => sum + s.value, 0);
-                const baseSkill = gregSkill2s[0];
-                enemy.activeBuffs.push({
-                    ...baseSkill,
-                    target: `enemy_${atkTypeEnemy}`,
-                    value: totalValue,
-                    remain: baseSkill.duration
-                });
-                gregSkill2s.forEach(s => recordHeroSkill(enemy, s, logger, isSilent, true));
-            }
-        }
+        handleHeroPhaseStartBuffs(atkTypeAlly, ally, enemy, allySkillPool, recordHeroSkill, logger, isSilent);
+        handleHeroPhaseStartBuffs(atkTypeEnemy, enemy, ally, enemySkillPool, recordHeroSkill, logger, isSilent);
 
         if (atkTypeAlly && ally[atkTypeAlly].troops > 0) {
             if (ally[atkTypeAlly].stunned) {
@@ -544,23 +578,21 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                     if (ally.spear.troops > 0 && ally.spearAttackCount % 2 === 0) allySpearEvenAttackOccurred = true;
                 }
                 
-                if (atkTypeAlly === 'bow' && (currentTurn - (ally.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (ally.stunTurnOffset||0)) > 0 && allySkillPool.some(s => s.category === 'Hendrick3')) {
-                    const hendrickSkills = allySkillPool.filter(s => s.category === 'Hendrick3');
-                    if(hendrickSkills.length > 0) {
-                        recordHeroSkill(ally, hendrickSkills[0], logger, isSilent, true);
-                        ['shield', 'spear', 'bow'].forEach(oppType => {
-                            if (enemy[oppType].troops > 0) {
-                                const hResult = calculateDamageSplit('bow', oppType, ally, enemy, fixedMinTroopsSetting, logger, currentTurn, false, allySkillPool, true, isSilent, allyResolvedMiaOppDefDown);
-                                enemy[oppType].troops = Math.max(0, enemy[oppType].troops - hResult.totalKills);
-                                if(!isSilent) {
-                                    logger(`  ▶ [味方 bow] ➔ [敵 ${oppType}] へ追加狙撃`);
-                                    if (hResult.detailLog) logger(hResult.detailLog);
-                                    logger(`     💥 追加撃破: ${hResult.totalKills.toLocaleString()}人`);
-                                }
-                            }
-                        });
-                    }
-                }
+                handleHeroHendrickSnipe(
+                    atkTypeAlly,
+                    currentTurn,
+                    allySkillPool,
+                    ally,
+                    enemy,
+                    recordHeroSkill,
+                    calculateDamageSplit,
+                    fixedMinTroopsSetting,
+                    logger,
+                    isSilent,
+                    allyResolvedMiaOppDefDown,
+                    "味方",
+                    "敵"
+                );
             }
         }
 
@@ -595,23 +627,21 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                     if (enemy.spear.troops > 0 && enemy.spearAttackCount % 2 === 0) enemySpearEvenAttackOccurred = true;
                 }
                 
-                if (atkTypeEnemy === 'bow' && (currentTurn - (enemy.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (enemy.stunTurnOffset||0)) > 0 && enemySkillPool.some(s => s.category === 'Hendrick3')) {
-                    const hendrickSkills = enemySkillPool.filter(s => s.category === 'Hendrick3');
-                    if(hendrickSkills.length > 0) {
-                        recordHeroSkill(enemy, hendrickSkills[0], logger, isSilent, true);
-                        ['shield', 'spear', 'bow'].forEach(oppType => {
-                            if (ally[oppType].troops > 0) {
-                                const hResult = calculateDamageSplit('bow', oppType, enemy, ally, fixedMinTroopsSetting, logger, currentTurn, false, enemySkillPool, true, isSilent, enemyResolvedMiaOppDefDown);
-                                ally[oppType].troops = Math.max(0, ally[oppType].troops - hResult.totalKills);
-                                if(!isSilent) {
-                                    logger(`  ▶ [敵 bow] ➔ [味方 ${oppType}] へ追加狙撃`);
-                                    if (hResult.detailLog) logger(hResult.detailLog);
-                                    logger(`     💥 追加撃破: ${hResult.totalKills.toLocaleString()}人`);
-                                }
-                            }
-                        });
-                    }
-                }
+                handleHeroHendrickSnipe(
+                    atkTypeEnemy,
+                    currentTurn,
+                    enemySkillPool,
+                    enemy,
+                    ally,
+                    recordHeroSkill,
+                    calculateDamageSplit,
+                    fixedMinTroopsSetting,
+                    logger,
+                    isSilent,
+                    enemyResolvedMiaOppDefDown,
+                    "敵",
+                    "味方"
+                );
             }
         }
 
