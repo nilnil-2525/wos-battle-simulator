@@ -1,12 +1,78 @@
 # WoS Battle Simulator 計算プロセスフロー図 (calculation_flow.md)
 
-本ドキュメントは、ホワイトアウト・サバイバル (WoS) 戦闘シミュレーターにおけるダメージ・撃破数計算プロセス（[battleSimulator.js](./src/utils/battleSimulator.js) 内の実装）を Mermaid.js を用いて視覚化したものです。
+本ドキュメントは、ホワイトアウト・サバイバル (WoS) 戦闘シミュレーターにおけるターン進行およびダメージ・撃破数計算プロセス（[battleSimulator.js](./src/utils/battleSimulator.js) 内の実装）を Mermaid.js を用いて視覚化したものです。
 
 ---
 
-## 計算プロセスフロー (4つのステップ)
+## 1. ターン進行とスキル抽選フロー (processOneTurn)
 
-GitHub上で本ファイルを表示すると、以下のMermaid記法に基づいたフローダイアグラムが自動的にレンダリングされて描画されます。
+シミュレーターが1ターンをどのように実行し、各英雄の確率スキルや効果がいつ抽選・適用されるかを示します。
+
+```mermaid
+graph TD
+    classDef startEnd fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef heroSkill fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+
+    Start[ターン開始] --> T1[永続/alwaysスキルの付与 ※1ターン目のみ]
+    class Start startEnd;
+    class T1 process;
+
+    T1 --> T2{ターン開始時スキル抽選}
+    class T2 decision;
+
+    T2 -->|40%| T2_Mia["ミアⅢ (味方被ダメ軽減バフ付与)"]
+    T2 -->|20%| T2_Greg["グレッグⅠ (味方全部隊殺傷バフ付与)"]
+    T2 -->|その他| P_Start[フェーズ進行開始: 盾 ➔ 槍 ➔ 弓]
+    class T2_Mia,T2_Greg heroSkill;
+    class P_Start process;
+
+    T2_Mia --> P_Start
+    T2_Greg --> P_Start
+
+    P_Start --> P_Check{行動可能部隊生存?}
+    class P_Check decision;
+    
+    P_Check -->|No| Turn_End[ターン終了]
+    class Turn_End startEnd;
+
+    P_Check -->|Yes| P1{フェーズ開始時スキル抽選}
+    class P1 decision;
+
+    P1 -->|50%| P1_Mia["ミアⅠ (敵被ダメ増加デバフ付与)"]
+    P1 -->|20%| P1_Greg["敵殺傷低下デバフ付与 (グレッグⅡ/ゴードンⅡ)"]
+    P1 -->|20%| P1_Kisyu["T11槍奇襲 (槍ターゲットを弓に固定)"]
+    P1 -->|通常| D_Calc[ダメージ計算実行 calculateDamageSplit]
+    class P1_Mia,P1_Greg,P1_Kisyu heroSkill;
+    class D_Calc process;
+
+    P1_Mia --> D_Calc
+    P1_Greg --> D_Calc
+    P1_Kisyu --> D_Calc
+
+    D_Calc --> P2{攻撃後・特殊処理判定}
+    class P2 decision;
+
+    P2 -->|槍の偶数回攻撃| P2_Gordon["ゴードンⅠ (追加ダメ & 敵殺傷低下バフ)"]
+    P2 -->|5T毎/ソニヤⅢ| P2_Sonya["ソニヤⅢ (追加ダメ & 敵へスタン付与)"]
+    P2 -->|3T毎/ヘンドリックⅢ| P2_Hendrick["ヘンドリックⅢ (敵全体へ追加狙撃)"]
+    P2 -->|通常| P_End[フェーズ終了/次フェーズへ]
+    class P2_Gordon,P2_Sonya,P2_Hendrick heroSkill;
+    class P_End process;
+
+    P2_Gordon --> P_End
+    P2_Sonya --> P_End
+    P2_Hendrick --> P_End
+
+    P_End --> P_Check
+```
+
+---
+
+## 2. ダメージ計算プロセス (calculateDamageSplit)
+
+1回の攻撃フェーズで実行される詳細なダメージおよび撃破数の計算ロジック（4つのステップ）です。
 
 ```mermaid
 graph TD
@@ -40,9 +106,17 @@ graph TD
     class Step2,C1,C2,C3,C4,C5 step2;
 
     subgraph Step3["【Step 3】スキルモディファイアの計算 (calcSkillModifiers)"]
-        D1[攻撃側 アクティブバフ] --> D3("モディファイア (normalSkillMod / exSkillMod)<br>※同カテゴリは加算 / 異カテゴリは乗算")
-        D2[防御側 アクティブバフ] --> D3
-        D4[ミアⅠ 被ダメバフ / ミアⅡ 追加ダメバフ] --> D3
+        D1[自軍アクティブバフ] --> D3("モディファイア (normalSkillMod / exSkillMod)")
+        D2[敵軍デバフ/被ダメバフ] --> D3
+        
+        subgraph BuffAggregation["バフカテゴリの集計ルール (加算後、カテゴリ間で乗算)"]
+            DA["① 分子カテゴリ (ダメージUP系)<br>・DamageUp1 (殺傷: ジェロニモI, グレッグI)<br>・DamageUp2 (与ダメ: ジェロニモIII, エディスI, ゴードンII, ブラッドリーIII)<br>・DamageUp3 (攻撃: ジェロニモII, ソニヤII, ブラッドリーI)<br>・NormalDamageUp (通常与ダメ: レイナ)<br>・OppDefenseDown1/2 (敵被ダメUP/敵防御低下: ミアI, ゴードンIII, ヘンドリックI)"]
+            DB["② 分母カテゴリ (ダメージ軽減系)<br>・OppDamageDown1/2 (敵与ダメ低下/敵殺傷低下: グレッグII, ゴードンII/III)<br>・DefenseUp1 (部隊HP: エディスIII, グレッグIII)<br>・DefenseUp2 (部隊防御: ヘンドリックII)<br>・DefenseUp3 (被ダメ低下/通常耐性: エディスI/II, 無名I)<br>・DefenseUpS (特定軽減: T7盾など)"]
+        end
+        DA --> D3
+        DB --> D3
+        
+        D4[ミアI/II 特殊処理] --> D3
         D5[無名 追加ダメ耐性置き換え処理] --> D3
         D3 -->|通常Mod / 追加Mod| C2
     end
