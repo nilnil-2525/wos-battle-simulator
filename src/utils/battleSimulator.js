@@ -394,7 +394,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
     const rawExtra = exDmgUp > 0 ? calcRawKills(baseDmg, atkUnit.troops, minTotalTroops, multiplier, exSkillMod, t7Reduc) : 0;
 
     // ステップ4: T11確率スキルの適用と丸め処理
-    const { finalNormalKills, finalExtraKills, totalKills, spearDmgMult, shieldReceiveDiv, spearReceiveDiv } = 
+    const { finalNormalKills, finalExtraKills, totalKills, spearDmgMult: t11SpearDmgMult, shieldReceiveDiv: t11ShieldReceiveDiv, spearReceiveDiv: t11SpearReceiveDiv } = 
         applyT11ProbabilitySkills(atkType, defType, atkUnit, defUnit, rawNormal, rawExtra, atkArmy.stats, logger, isSilent, isOverallHendrickAttacking);
 
     // T11弓兵の連射/燃晶火薬による撃破数を統計記録
@@ -420,7 +420,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
             detailLog += `  ┃ [通常Mod]: (${dmgUpStr} [与ダバフ] × ${oppDefDownStr} [被ダ増]) / (${oppDmgDownStr} [攻撃低下] × ${defUpStr} [被ダ低下]) = ${normalSkillMod.toFixed(3)}\n`;
         }
         if (exDmgUp > 0) {
-            const exDmgUpStr = formatMult(dmgUp1, dmgUp2, dmgUp3);
+            const exDmgUpStr = formatMult(rawValues.dmgUp1, rawValues.dmgUp2, rawValues.dmgUp3);
             detailLog += `  ┃ [追加Mod]: (${exDmgUp.toFixed(2)} [追加倍率] × ${exDmgUpStr} [通常乗算] × ${oppDefDownStr} [被ダ増]) / (${oppDmgDownStr} [攻撃低下] × ${exDefUpStr} [被ダ低下+無名]) = ${exSkillMod.toFixed(3)}\n`;
         }
 
