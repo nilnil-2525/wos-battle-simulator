@@ -9,6 +9,7 @@
 シミュレーターが1ターンをどのように実行し、各英雄の確率スキルや効果がいつ抽選・適用されるかを示す。
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD
     classDef startEnd fill:#ffebee,stroke:#c62828,stroke-width:2px;
     classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
@@ -95,6 +96,7 @@ graph TD
 1回の攻撃フェーズで実行される詳細なダメージおよび撃破数の計算ロジック（4つのステップ）である。
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD
     %% スタイル定義
     classDef step1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
