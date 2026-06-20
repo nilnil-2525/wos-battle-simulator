@@ -273,7 +273,7 @@
   enemy:
     shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
   expected:
-    kills_to_enemy: 6374
+    kills_to_enemy: 6881
     kills_to_ally: 3993
     skill_trigger_counts:
       "gordon_ゴードンⅢ": 2

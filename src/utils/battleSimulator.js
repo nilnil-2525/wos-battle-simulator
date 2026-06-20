@@ -124,12 +124,15 @@ export const sumBuffCategory = (buffs, targetCategory, unitType, enemyTargetType
         if (isMyBuff) {
             if (b.target === 'all' || b.target === unitType || b.target === 'self') match = true;
         } else {
-            if (b.target === 'all_enemy' || b.target === `enemy_${unitType}`) match = true;
+            if (b.target === 'all_enemy') match = true;
             if (targetCategory.startsWith('OppDefenseDown')) {
+                if (b.target === `enemy_${enemyTargetType}`) match = true;
                 if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === enemyTargetType) match = true;
-            }
-            if (targetCategory.startsWith('OppDamageDown')) {
-                if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
+            } else {
+                if (b.target === `enemy_${unitType}`) match = true;
+                if (targetCategory.startsWith('OppDamageDown')) {
+                    if ((b.target === 'spear_target' || b.target === 'enemy_target') && b.attackedTarget === unitType) match = true;
+                }
             }
         }
         if (match) sum += b.value;
