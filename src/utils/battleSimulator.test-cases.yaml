@@ -191,3 +191,34 @@
       "greg_グレッグⅠ": 2
       "greg_グレッグⅡ": 1
 
+- name: "13. 無名の追加ダメージ耐性検証"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "sonya" }
+    spearAttackCount: 1 # 偶数回攻撃時の追加ダメージ(ExtraDamageUp +0.75)を発生させる
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderShield: "mumei" } # 無名(mumei)が盾の被攻撃時にDefenseUp3を置き換える
+  expected:
+    kills_to_enemy: 1417 # 通常撃破(823) + 追加撃破(594) ※ソニヤⅠ/Ⅱのスキル効果と無名効果が適用された値
+
+- name: "14. 通常与ダメUP（レイナ）の追加ダメージ非適用検証"
+  ally:
+    spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderSpear: "sonya", rider1: "reina" } # レイナの通常与ダメ+30%を付与
+    spearAttackCount: 1 # 偶数回攻撃時の追加ダメージ(ExtraDamageUp +0.75)を発生させる
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2110 # 通常撃破(1338) + 追加撃破(772) ※通常与ダメ+30%が追加ダメに適用されないことを保証した値
+
+- name: "15. T11弓兵の確率スキル（連射・燃晶火薬）の検証"
+  ally:
+    bow: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    bow_skills_active: true # 乱数モックを 0.05 にして連射・燃晶火薬を強制発動
+  enemy:
+    shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+  expected:
+    kills_to_enemy: 2794 # 通常(972) + 追加(1822) ※連射・燃晶火薬および敵盾兵の烈晶盾(/1.51)が発動した値
+
+

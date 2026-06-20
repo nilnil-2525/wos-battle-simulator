@@ -71,6 +71,8 @@ describe('WOS Battle Simulator Table-Driven Tests', () => {
             let randomValue = 0.9;
             if (tc.ally?.kisyu_active || tc.ally?.mia_i_active || tc.ally?.greg_active) {
                 randomValue = 0.1;
+            } else if (tc.ally?.bow_skills_active) {
+                randomValue = 0.05; // 弓兵の連射(10%)、燃晶火薬(30%)を共に発動させる
             }
             vi.spyOn(Math, 'random').mockImplementation(() => randomValue);
 
