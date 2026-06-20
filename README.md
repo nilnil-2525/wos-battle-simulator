@@ -82,7 +82,7 @@ npm run test
 * **`src/utils/battleSimulator.test.js`**: YAMLテストケースを自動パースして Vitest で実行するテストランナーコード。
 * **`src/utils/battleSimulator.test-cases.yaml`**: 設計者が自由に編集・追加可能な、戦闘シミュレータのテストケース定義ファイル。
 * **`public/game-data.yaml`**: 兵種の基礎ステータスや英雄スキルの基礎値を管理するデータファイル。
-* **`calculation_logic_summary.txt`**: 戦闘進行、ダメージ計算式、スキル発動タイミングなどの詳細な仕様書。
+* **`calculation_logic_summary.md`**: 戦闘進行、ダメージ計算式、スキル発動タイミングなどの詳細な仕様書。
 * **`RELEASE_NOTE.md`**: 各バージョンの変更点（バグ修正や仕様更新）を記録したリリースノート。
 * **`agents.md` / `skills.md`**: 開発を担当するAIエージェントの役割定義および技術スキル一覧。
 
