@@ -96,15 +96,15 @@
       "mia_ミアⅡ": 2 # 1, 2ターン目に各1回、計2回発動
       "mia_ミアⅢ": 2 # 1, 2ターン目に各1回、計2回発動
 
-- name: "6. ブラッドリーの固有HP検証 - 敵弓リーダー時のHP補正"
+- name: "6. ブラッドリーの固有HP検証 - 味方弓リーダー編成時の敵HPデバフ補正"
   ally:
     shield: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
+    heroes: { leaderBow: "bradley" } # 味方弓リーダーにブラッドリーを編成 (敵槍HPが /1.30 される)
   enemy:
     spear: { tier: 11, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
-    heroes: { leaderBow: "bradley" } # 敵弓リーダーにブラッドリーを編成 (敵槍HPが /1.30 される)
   expected:
-    # 通常の1100から、敵HP減少により撃破数が1430人に増えること
-    kills_to_enemy: 1430
+    # 通常の1100から、敵HP減少とブラッドリー攻撃バフ(+25%)により撃破数が1788人に増えること
+    kills_to_enemy: 1788
 
 - name: "7. ヘンドリックの固有スキル検証 - 3ターン目の全体追加狙撃"
   ally:
@@ -171,7 +171,7 @@
     bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
   expected:
     kills_to_enemy: 2053
-    kills_to_ally: 4894
+    kills_to_ally: 3915
     skill_trigger_counts:
       "greg_グレッグⅠ": 1
       "greg_グレッグⅡ": 1
@@ -186,7 +186,7 @@
     bow: { tier: 8, troops: 100000, attack: 0, lethality: 0, defense: 0, hp: 0 }
   expected:
     kills_to_enemy: 2640
-    kills_to_ally: 4894
+    kills_to_ally: 3915
     skill_trigger_counts:
       "greg_グレッグⅠ": 2
       "greg_グレッグⅡ": 1

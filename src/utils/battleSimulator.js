@@ -138,26 +138,26 @@ export const recordHeroSkill = (army, skill, logger, isSilent, isInstant = false
 };
 
 /**
- * ステップ1: 兵種の基礎値とバフ・防御側リーダー補正から実ステータスを算出する
+ * ステップ1: 兵種の基礎値とバフ・攻撃側リーダー補正から実ステータスを算出する
  * @param {string} atkType - 攻撃側の兵種 ('shield', 'spear', 'bow')
  * @param {string} defType - 防御側の兵種 ('shield', 'spear', 'bow')
  * @param {object} atkUnit - 攻撃側部隊の情報（tier, buffs 等）
  * @param {object} defUnit - 防御側部隊の情報（tier, buffs 等）
- * @param {string} leaderBow - 防御側の弓兵リーダー名
+ * @param {string} atkLeaderBow - 攻撃側の弓兵リーダー名
  * @returns {object} 実ステータス { aAtk, aLet, dDef, dHp, hpDiv }
  */
-export const calcActualStats = (atkType, defType, atkUnit, defUnit, leaderBow) => {
+export const calcActualStats = (atkType, defType, atkUnit, defUnit, atkLeaderBow) => {
     const atkBase = baseStatsData[atkType][atkUnit.tier];
     const defBase = baseStatsData[defType][defUnit.tier];
 
-    // 防御側の弓兵リーダーがブラッドリー（bradley）の場合、特定の被攻撃部隊のHPを除算（弱体化）する補正
+    // 攻撃側の弓兵リーダーがブラッドリー（bradley）の場合、防御側部隊のHPを除算（弱体化）する補正
     let hpDiv = 1.0;
-    if (leaderBow === 'bradley') {
+    if (atkLeaderBow === 'bradley') {
         if (defType === 'shield') hpDiv = 1.25;
         if (defType === 'spear') hpDiv = 1.30;
     }
 
-    // T11兵種特有の常時パッシブ補正 (弓攻撃1.06倍、盾防御1.06倍)
+    // T11兵種特有 of 常時パッシブ補正 (弓攻撃1.06倍、盾防御1.06倍)
     const t11BowPassiveAtkMult = (atkType === 'bow' && atkUnit.tier === 11) ? 1.06 : 1.0;
     const t11ShieldPassiveDefMult = (defType === 'shield' && defUnit.tier === 11) ? 1.06 : 1.0;
 
@@ -311,7 +311,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
     const defUnit = defArmy[defType];
 
     // ステップ1: 実ステータスの算出
-    const { aAtk, aLet, dDef, dHp, hpDiv } = calcActualStats(atkType, defType, atkUnit, defUnit, defArmy.heroes.leaderBow);
+    const { aAtk, aLet, dDef, dHp, hpDiv } = calcActualStats(atkType, defType, atkUnit, defUnit, atkArmy.heroes.leaderBow);
 
     const myBuffs = atkArmy.activeBuffs;
     const enemyBuffs = defArmy.activeBuffs;
