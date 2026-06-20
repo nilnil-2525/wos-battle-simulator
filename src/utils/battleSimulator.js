@@ -1,6 +1,15 @@
 // Whiteout Survival (WOS) Battle Simulator - Core Calculation Logic
 // This file is React-independent and contains pure calculation functions.
 
+import {
+    handleHeroTurnStartSkills,
+    handleHeroPhaseStartDebuffs,
+    handleHeroPhaseStartBuffs,
+    handleHeroAttackExtraDamage,
+    handleHeroInstantAttackSkills,
+    handleHeroHendrickSnipe
+} from './heroSkills.js';
+
 export let baseStatsData = {};
 
 export const applyBattleGameData = (data) => {
@@ -318,16 +327,7 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
 
     // ミアの攻撃時確率追加ダメージ（ミアⅡ）等の判定
     let miaOppDefDown = resolvedMiaOppDefDown;
-    let miaExtraDmg = 0;
-    if (!isOverallHendrickAttacking) {
-        const miaSkill2s = atkSkillPool.filter(s => s.timing === 'mia_atk_prob_50_ex');
-        if (miaSkill2s.length > 0 && Math.random() < 0.50) {
-            miaSkill2s.forEach(s => {
-                miaExtraDmg += s.value;
-                recordHeroSkill(atkArmy, s, logger, isSilent, true);
-            });
-        }
-    }
+    const miaExtraDmg = handleHeroAttackExtraDamage(isOverallHendrickAttacking, atkSkillPool, atkArmy, recordHeroSkill, logger, isSilent);
 
     // スキル追加ダメージ（ソニヤやゴードン等の偶数回攻撃 / 周期攻撃）の集計
     let exDmgUp = sumBuffCategory(myBuffs, 'ExtraDamageUp', atkType, null, true) + miaExtraDmg;
@@ -354,19 +354,21 @@ export const calculateDamageSplit = (atkType, defType, atkArmy, defArmy, minTota
     }
 
     // 各英雄スキルの即時効果（ソニヤスタンや偶数回攻撃時の追加ダメージ加算）の集計
-    atkSkillPool.forEach(skill => {
-        if (atkType === 'spear' && isEvenAttack && skill.timing === 'spear_even_attack_instant') { 
-            exDmgUp += skill.value;
-            instantLog += `[${skill.heroName}+${(skill.value*100).toFixed(1)}%] `; 
-            recordHeroSkill(atkArmy, skill, logger, isSilent, false);
-        }
-        if (atkType === 'spear' && (currentTurn - (atkArmy.stunTurnOffset||0)) % 5 === 0 && (currentTurn - (atkArmy.stunTurnOffset||0)) > 0 && skill.timing === 'turn_5n_instant') { 
-            exDmgUp += skill.value;
-            instantLog += `[${skill.heroName}Ⅲ+${(skill.value*100).toFixed(1)}%] `; 
-            hasStunApplied = true; 
-            recordHeroSkill(atkArmy, skill, logger, isSilent, false);
-        }
-    });
+    const instantResult = handleHeroInstantAttackSkills(
+        atkType,
+        currentTurn,
+        isEvenAttack,
+        atkSkillPool,
+        atkArmy,
+        recordHeroSkill,
+        logger,
+        isSilent
+    );
+    exDmgUp += instantResult.exDmgUp;
+    instantLog += instantResult.instantLog;
+    if (instantResult.hasStunApplied) {
+        hasStunApplied = true;
+    }
 
     if (isOverallHendrickAttacking) exDmgUp = 0.40;
     else exDmgUp += t11BowExtraAtk;
@@ -468,46 +470,8 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         enemySkillPool.filter(s => s.timing === 'always').forEach(s => enemy.activeBuffs.push({ ...s, remain: 999 }));
     }
 
-    const allyMiaSkill3s = allySkillPool.filter(s => s.timing === 'mia_turn_prob_40');
-    if (allyMiaSkill3s.length > 0 && Math.random() < 0.40) {
-        allyMiaSkill3s.forEach(s => {
-            ally.activeBuffs.push({ ...s, remain: 1 });
-            recordHeroSkill(ally, s, logger, isSilent, true);
-        });
-    }
-    const enemyMiaSkill3s = enemySkillPool.filter(s => s.timing === 'mia_turn_prob_40');
-    if (enemyMiaSkill3s.length > 0 && Math.random() < 0.40) {
-        enemyMiaSkill3s.forEach(s => {
-            enemy.activeBuffs.push({ ...s, remain: 1 });
-            recordHeroSkill(enemy, s, logger, isSilent, true);
-        });
-    }
-
-    // グレッグ：ターン開始時スキル1（殺傷+ 40%, 3T, 確率20%）
-    const allyGregSkill1s = allySkillPool.filter(s => s.timing === 'greg_turn_prob_20');
-    if (allyGregSkill1s.length > 0 && Math.random() < 0.20) {
-        ally.activeBuffs = ally.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_turn_prob_20'));
-        const totalValue = allyGregSkill1s.reduce((sum, s) => sum + s.value, 0);
-        const baseSkill = allyGregSkill1s[0];
-        ally.activeBuffs.push({
-            ...baseSkill,
-            value: totalValue,
-            remain: baseSkill.duration
-        });
-        allyGregSkill1s.forEach(s => recordHeroSkill(ally, s, logger, isSilent, true));
-    }
-    const enemyGregSkill1s = enemySkillPool.filter(s => s.timing === 'greg_turn_prob_20');
-    if (enemyGregSkill1s.length > 0 && Math.random() < 0.20) {
-        enemy.activeBuffs = enemy.activeBuffs.filter(b => !(b.heroKey === 'greg' && b.timing === 'greg_turn_prob_20'));
-        const totalValue = enemyGregSkill1s.reduce((sum, s) => sum + s.value, 0);
-        const baseSkill = enemyGregSkill1s[0];
-        enemy.activeBuffs.push({
-            ...baseSkill,
-            value: totalValue,
-            remain: baseSkill.duration
-        });
-        enemyGregSkill1s.forEach(s => recordHeroSkill(enemy, s, logger, isSilent, true));
-    }
+    handleHeroTurnStartSkills(ally, allySkillPool, recordHeroSkill, logger, isSilent);
+    handleHeroTurnStartSkills(enemy, enemySkillPool, recordHeroSkill, logger, isSilent);
 
     if (ally.spear.troops > 0 && ally.spear.tier === 11) {
         if (enemy.bow.troops > 0 && Math.random() < 0.20) { 
@@ -574,67 +538,11 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
         let killsToEnemy = 0, killsToAlly = 0;
         let applyAllyStunToEnemy = false, applyEnemyStunToAlly = false;
 
-        let allyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2 && atkTypeAlly) {
-            const miaSkill1s = allySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
-            if (miaSkill1s.length > 0 && Math.random() < 0.50) {
-                miaSkill1s.forEach(s => {
-                    allyResolvedMiaOppDefDown += s.value;
-                    recordHeroSkill(ally, s, logger, isSilent, true);
-                });
-            }
-        }
-        let enemyResolvedMiaOppDefDown = 0;
-        if (currentTurn >= 2 && atkTypeEnemy) {
-            const miaSkill1sE = enemySkillPool.filter(s => s.timing === 'mia_atk_prob_50');
-            if (miaSkill1sE.length > 0 && Math.random() < 0.50) {
-                miaSkill1sE.forEach(s => {
-                    enemyResolvedMiaOppDefDown += s.value;
-                    recordHeroSkill(enemy, s, logger, isSilent, true);
-                });
-            }
-        }
+        const allyResolvedMiaOppDefDown = handleHeroPhaseStartDebuffs(currentTurn, atkTypeAlly, allySkillPool, ally, recordHeroSkill, logger, isSilent);
+        const enemyResolvedMiaOppDefDown = handleHeroPhaseStartDebuffs(currentTurn, atkTypeEnemy, enemySkillPool, enemy, recordHeroSkill, logger, isSilent);
 
-        // グレッグ：味方攻撃フェーズ開始時スキル2（敵殺傷低下+ 50%, 2T, 確率20%）
-        if (atkTypeAlly && enemy[atkTypeAlly] && enemy[atkTypeAlly].troops > 0) {
-            const gregSkill2s = allySkillPool.filter(s => s.timing === 'greg_phase_prob_20');
-            if (gregSkill2s.length > 0 && Math.random() < 0.20) {
-                ally.activeBuffs = ally.activeBuffs.filter(b => !(
-                    b.heroKey === 'greg' && 
-                    b.timing === 'greg_phase_prob_20' && 
-                    b.target === `enemy_${atkTypeAlly}`
-                ));
-                const totalValue = gregSkill2s.reduce((sum, s) => sum + s.value, 0);
-                const baseSkill = gregSkill2s[0];
-                ally.activeBuffs.push({
-                    ...baseSkill,
-                    target: `enemy_${atkTypeAlly}`,
-                    value: totalValue,
-                    remain: baseSkill.duration
-                });
-                gregSkill2s.forEach(s => recordHeroSkill(ally, s, logger, isSilent, true));
-            }
-        }
-        // グレッグ：敵攻撃フェーズ開始時スキル2（味方殺傷低下+ 50%, 2T, 確率20%）
-        if (atkTypeEnemy && ally[atkTypeEnemy] && ally[atkTypeEnemy].troops > 0) {
-            const gregSkill2s = enemySkillPool.filter(s => s.timing === 'greg_phase_prob_20');
-            if (gregSkill2s.length > 0 && Math.random() < 0.20) {
-                enemy.activeBuffs = enemy.activeBuffs.filter(b => !(
-                    b.heroKey === 'greg' && 
-                    b.timing === 'greg_phase_prob_20' && 
-                    b.target === `enemy_${atkTypeEnemy}`
-                ));
-                const totalValue = gregSkill2s.reduce((sum, s) => sum + s.value, 0);
-                const baseSkill = gregSkill2s[0];
-                enemy.activeBuffs.push({
-                    ...baseSkill,
-                    target: `enemy_${atkTypeEnemy}`,
-                    value: totalValue,
-                    remain: baseSkill.duration
-                });
-                gregSkill2s.forEach(s => recordHeroSkill(enemy, s, logger, isSilent, true));
-            }
-        }
+        handleHeroPhaseStartBuffs(atkTypeAlly, ally, enemy, allySkillPool, recordHeroSkill, logger, isSilent);
+        handleHeroPhaseStartBuffs(atkTypeEnemy, enemy, ally, enemySkillPool, recordHeroSkill, logger, isSilent);
 
         if (atkTypeAlly && ally[atkTypeAlly].troops > 0) {
             if (ally[atkTypeAlly].stunned) {
@@ -667,23 +575,21 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                     if (ally.spear.troops > 0 && ally.spearAttackCount % 2 === 0) allySpearEvenAttackOccurred = true;
                 }
                 
-                if (atkTypeAlly === 'bow' && (currentTurn - (ally.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (ally.stunTurnOffset||0)) > 0 && allySkillPool.some(s => s.category === 'Hendrick3')) {
-                    const hendrickSkills = allySkillPool.filter(s => s.category === 'Hendrick3');
-                    if(hendrickSkills.length > 0) {
-                        recordHeroSkill(ally, hendrickSkills[0], logger, isSilent, true);
-                        ['shield', 'spear', 'bow'].forEach(oppType => {
-                            if (enemy[oppType].troops > 0) {
-                                const hResult = calculateDamageSplit('bow', oppType, ally, enemy, fixedMinTroopsSetting, logger, currentTurn, false, allySkillPool, true, isSilent, allyResolvedMiaOppDefDown);
-                                enemy[oppType].troops = Math.max(0, enemy[oppType].troops - hResult.totalKills);
-                                if(!isSilent) {
-                                    logger(`  ▶ [味方 bow] ➔ [敵 ${oppType}] へ追加狙撃`);
-                                    if (hResult.detailLog) logger(hResult.detailLog);
-                                    logger(`     💥 追加撃破: ${hResult.totalKills.toLocaleString()}人`);
-                                }
-                            }
-                        });
-                    }
-                }
+                handleHeroHendrickSnipe(
+                    atkTypeAlly,
+                    currentTurn,
+                    allySkillPool,
+                    ally,
+                    enemy,
+                    recordHeroSkill,
+                    calculateDamageSplit,
+                    fixedMinTroopsSetting,
+                    logger,
+                    isSilent,
+                    allyResolvedMiaOppDefDown,
+                    "味方",
+                    "敵"
+                );
             }
         }
 
@@ -718,23 +624,21 @@ export const processOneTurn = (currentArmyData, currentTurn, fixedMinTroopsSetti
                     if (enemy.spear.troops > 0 && enemy.spearAttackCount % 2 === 0) enemySpearEvenAttackOccurred = true;
                 }
                 
-                if (atkTypeEnemy === 'bow' && (currentTurn - (enemy.stunTurnOffset||0)) % 3 === 0 && (currentTurn - (enemy.stunTurnOffset||0)) > 0 && enemySkillPool.some(s => s.category === 'Hendrick3')) {
-                    const hendrickSkills = enemySkillPool.filter(s => s.category === 'Hendrick3');
-                    if(hendrickSkills.length > 0) {
-                        recordHeroSkill(enemy, hendrickSkills[0], logger, isSilent, true);
-                        ['shield', 'spear', 'bow'].forEach(oppType => {
-                            if (ally[oppType].troops > 0) {
-                                const hResult = calculateDamageSplit('bow', oppType, enemy, ally, fixedMinTroopsSetting, logger, currentTurn, false, enemySkillPool, true, isSilent, enemyResolvedMiaOppDefDown);
-                                ally[oppType].troops = Math.max(0, ally[oppType].troops - hResult.totalKills);
-                                if(!isSilent) {
-                                    logger(`  ▶ [敵 bow] ➔ [味方 ${oppType}] へ追加狙撃`);
-                                    if (hResult.detailLog) logger(hResult.detailLog);
-                                    logger(`     💥 追加撃破: ${hResult.totalKills.toLocaleString()}人`);
-                                }
-                            }
-                        });
-                    }
-                }
+                handleHeroHendrickSnipe(
+                    atkTypeEnemy,
+                    currentTurn,
+                    enemySkillPool,
+                    enemy,
+                    ally,
+                    recordHeroSkill,
+                    calculateDamageSplit,
+                    fixedMinTroopsSetting,
+                    logger,
+                    isSilent,
+                    enemyResolvedMiaOppDefDown,
+                    "敵",
+                    "味方"
+                );
             }
         }
 

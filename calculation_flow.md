@@ -1,6 +1,6 @@
 # WoS Battle Simulator 計算プロセスフロー図 (calculation_flow.md)
 
-本ドキュメントは、ホワイトアウト・サバイバル (WoS) 戦闘シミュレーターにおけるターン進行およびダメージ・撃破数計算プロセス（[battleSimulator.js](./src/utils/battleSimulator.js) 内の実装）を Mermaid.js を用いて視覚化したものです。
+本ドキュメントは、ホワイトアウト・サバイバル (WoS) 戦闘シミュレーターにおけるターン進行およびダメージ・撃破数計算プロセス（[battleSimulator.js](./src/utils/battleSimulator.js) およびそこから切り出された英雄スキル特殊処理モジュール [heroSkills.js](./src/utils/heroSkills.js) 内の実装）を Mermaid.js を用いて視覚化したものです。
 
 ---
 
